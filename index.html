@@ -225,7 +225,7 @@ dialog ol,dialog ul{padding-left:20px}
 }
 @media (max-width:700px){
   .topbar{padding:8px 12px;gap:8px 12px}
-  .brand small{display:none}
+  .brand small{font-size:10px}
   .course{flex:1 1 200px;min-width:0} .course select{flex:1;width:100%;min-width:0;max-width:none}
   .actions{margin-left:0;width:100%;gap:6px}
   .actions button{padding:6px 8px;font-size:12px}
@@ -289,7 +289,7 @@ dialog ol,dialog ul{padding-left:20px}
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'Version 4';
+const APP_VERSION = 'Version 5';
 const KEY = 'notenbuch-sek1-v2';
 const isStandalone = () => window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
 const KEY_OLD = 'notenbuch-sek1-v1';
@@ -545,7 +545,11 @@ function missingScheduleDates(c){
 function mergeCourses(local, remote, dirty){
   const byRid = new Map(remote.map(c => [c.id, c])); const out = [];
   for (const rc of remote) { const lc = local.find(x => x.id === rc.id); out.push(lc && (dirty.has(lc.id) || (lc.updated || 0) > (rc.updated || 0)) ? lc : rc); }
-  for (const lc of local) if (!byRid.has(lc.id) && (!lc.synced || dirty.has(lc.id))) out.push(lc);
+  for (const lc of local) {
+    if (byRid.has(lc.id)) continue;
+    if (remote.length && lc.isExample && !lc.synced) { dirty.delete(lc.id); continue; } // unverbundener Beispielkurs: verwerfen, wenn es schon echte Daten gibt
+    if (!lc.synced || dirty.has(lc.id)) out.push(lc);
+  }
   out.sort((a, b) => (a.created || 0) - (b.created || 0));
   return out;
 }
