@@ -150,15 +150,19 @@ tbody tr.focus th.sticky-col{background:var(--accent-soft)}
 .spiegel .box{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 14px;text-align:center;min-width:70px}
 .spiegel .box b{display:block;font-size:20px;font-family:var(--mono)}
 .spiegel .box span{font-size:11px;color:var(--muted)}
-.tiles{display:grid;gap:8px;grid-template-columns:repeat(var(--cols,6),minmax(0,1fr))}
-.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 6px;min-height:78px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;-webkit-user-select:none;position:relative;text-align:center}
+.boardwrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);touch-action:pan-x pan-y}
+.board{position:relative;background:var(--surface);container-type:inline-size;min-height:200px}
+.board.edit{background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:5% 6.667%;cursor:default}
+.tafel{position:absolute;left:25%;top:0;width:50%;height:4%;min-height:14px;background:var(--accent-soft);border-bottom:2px solid var(--accent);border-radius:0 0 8px 8px;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.4cqw,13px);color:var(--accent);letter-spacing:.08em;text-transform:uppercase;pointer-events:none}
+.tile{position:absolute;box-sizing:border-box;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:2% 1%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;-webkit-user-select:none;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .tile:hover{border-color:var(--accent)}
-.tile .tn{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-.tile .tm{font-family:var(--mono);font-weight:700;font-size:20px;line-height:1;min-height:22px}
-.tile .tg{font-size:11px;color:var(--muted);font-family:var(--mono)}
-.tile.sel{outline:3px solid var(--accent)}
+.tile .tn{font-weight:600;font-size:clamp(9px,1.9cqw,14px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.tile .tm{font-family:var(--mono);font-weight:700;font-size:clamp(13px,3cqw,22px);line-height:1}
+.tile .tg{font-size:clamp(8px,1.4cqw,12px);color:var(--muted);font-family:var(--mono)}
 .tile.focus{border-color:var(--accent);background:var(--accent-soft)}
-.tile.hasreason::after{content:"";position:absolute;right:6px;top:6px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.tile.hasreason::after{content:"";position:absolute;right:5%;top:6%;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.board.edit .tile{cursor:grab;touch-action:none;border-style:dashed}
+.board.edit .tile.dragging{cursor:grabbing;box-shadow:0 8px 20px rgba(0,0,0,.25);z-index:5;border-style:solid;border-color:var(--accent)}
 .popover{position:fixed;z-index:40;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.2);padding:8px;display:flex;flex-wrap:wrap;gap:4px;max-width:320px}
 .popover button{font-size:12px;padding:4px 8px}
 .form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:14px 28px;max-width:1200px}
@@ -237,9 +241,6 @@ dialog ol,dialog ul{padding-left:20px}
   .sticky-col{min-width:110px;max-width:140px}
   .sum{min-width:96px}
   .sum .c{white-space:normal}
-  .tiles{--cols:3!important}
-  .tile{min-height:70px;padding:6px 4px}
-  .tile .tn{font-size:12px}
 }
 </style>
 </head>
@@ -289,7 +290,7 @@ dialog ol,dialog ul{padding-left:20px}
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'Version 5';
+const APP_VERSION = 'Version 6';
 const KEY = 'notenbuch-sek1-v2';
 const isStandalone = () => window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
 const KEY_OLD = 'notenbuch-sek1-v1';
@@ -784,18 +785,24 @@ function renderMitarbeit(c){
 function viewToggle(){ return `<button class="toggle ${state.viewMode === 'kacheln' ? 'on' : ''}" id="btnViewMode" title="Sitzplan-Kacheln für schnelles Tippen">${state.viewMode === 'kacheln' ? 'Tabelle' : 'Kacheln'}</button>`; }
 function micButton(){ const ok = !!(window.SpeechRecognition || window.webkitSpeechRecognition); return ok ? `<button id="btnMic" class="mic" title="Diktat: z. B. „AL plus plus, BT minus“">🎤</button>` : ''; }
 function curLesson(c){ let l = c.lessons.find(x => x.id === state.curLesson); if (!l) { l = [...c.lessons].filter(x => !x.ausfall).sort((a, b) => a.date.localeCompare(b.date)).pop(); state.curLesson = l ? l.id : null; } return l; }
+const TILE_W = 14, TILE_H = 11; // Breite in % der Planbreite, Höhe in Einheiten (Plan = 100 Einheiten breit)
+function seatOrder(c){ return [...c.students].sort((a, b) => (a.seat ?? 999) - (b.seat ?? 999)); }
+function defaultPos(c, i){ const cols = Math.max(2, c.settings.seatCols || 6); const gap = (100 - cols * TILE_W) / (cols + 1); return { x: +(gap + (i % cols) * (TILE_W + gap)).toFixed(1), y: +(9 + Math.floor(i / cols) * (TILE_H + 4)).toFixed(1) }; }
+function boardHeight(c){ if (c.settings.boardH) return c.settings.boardH; let maxY = 0; seatOrder(c).forEach((st, i) => { const p = st.pos || defaultPos(c, i); maxY = Math.max(maxY, p.y); }); return Math.max(50, Math.ceil(maxY + TILE_H + 5)); }
+function boardZoom(){ return state.boardZoom || (window.innerWidth < 700 ? 1.8 : 1); }
 function renderKacheln(c){
   const l = curLesson(c); const focus = new Set(focusStudents(c).map(s => s.id));
-  const seats = [...c.students].sort((a, b) => (a.seat ?? 999) - (b.seat ?? 999));
-  const tiles = seats.map(st => { const m = l ? ((c.marks[st.id] || {})[l.id] || '') : ''; const r = l ? ((c.reasons[st.id] || {})[l.id] || '') : ''; const g = mitarbeit(c, st.id).note;
-    return `<div class="tile m-${MARK_CLS[m]} ${state.seatSel === st.id ? 'sel' : ''} ${focus.has(st.id) ? 'focus' : ''} ${r ? 'hasreason' : ''}" data-tile="${st.id}" title="${esc(r)}"><span class="tn">${esc(st.name)}</span><span class="tm">${MARK_LABEL[m]}</span><span class="tg">${fmt(g, 1)}</span></div>`; }).join('');
+  const H = boardHeight(c); const th = (TILE_H / H * 100).toFixed(2);
+  const tiles = seatOrder(c).map((st, i) => { const m = l ? ((c.marks[st.id] || {})[l.id] || '') : ''; const r = l ? ((c.reasons[st.id] || {})[l.id] || '') : ''; const g = mitarbeit(c, st.id).note; const p = st.pos || defaultPos(c, i);
+    return `<div class="tile m-${MARK_CLS[m]} ${focus.has(st.id) ? 'focus' : ''} ${r ? 'hasreason' : ''}" data-tile="${st.id}" title="${esc(r)}" style="left:${p.x}%;top:${(p.y / H * 100).toFixed(2)}%;width:${TILE_W}%;height:${th}%"><span class="tn">${esc(st.name)}</span><span class="tm">${MARK_LABEL[m]}</span><span class="tg">${fmt(g, 1)}</span></div>`; }).join('');
   const sel = `<select id="curLesson">${[...c.lessons].sort((a, b) => b.date.localeCompare(a.date)).map(x => `<option value="${x.id}" ${l && x.id === l.id ? 'selected' : ''}>${weekday(x.date)} ${shortDate(x.date)} ${kindOf(c, x).id !== 'stunde' ? '· ' + esc(kindOf(c, x).name) : ''}${x.topic ? ' · ' + esc(x.topic) : ''}${x.ausfall ? ' (Ausfall)' : ''}</option>`).join('')}</select>`;
+  const editTools = state.seatEdit ? `<button class="small toggle ${state.snap ? 'on' : ''}" id="btnSnap" title="Kacheln beim Loslassen am Raster ausrichten">Raster</button><button class="small" id="btnAutoSeat" title="Alle Kacheln in Reihen anordnen">Automatisch anordnen</button><span class="flag">Höhe</span><button class="small" data-boardh="-10">−</button><button class="small" data-boardh="10">+</button>` : '';
   return `<section class="pane">
     <div class="toolbar">${stampBar()}<div class="spacer"></div>${viewToggle()}${micButton()}${addBar(c)}</div>
-    <div class="toolbar"><label>Spalte ${sel}</label>${focusBar(c)}<div class="spacer"></div><button class="small toggle ${state.seatEdit ? 'on' : ''}" id="btnSeatEdit">${state.seatEdit ? 'Sitzplan fertig' : 'Sitzplan bearbeiten'}</button></div>
-    ${state.seatEdit ? '<p class="hint">Sitzplan: zwei Kacheln nacheinander antippen, um sie zu tauschen. Spaltenzahl unter Einstellungen.</p>' : '<p class="hint">Stempel wählen, Kachel antippen. Nochmal antippen löscht. Kacheln mit hellem Rahmen hatten bisher die wenigsten Einträge.</p>'}
+    <div class="toolbar"><label>Spalte ${sel}</label>${focusBar(c)}<div class="spacer"></div><span class="flag">Zoom</span><button class="small" data-zoom="-0.3">−</button><button class="small" data-zoom="0.3">+</button><button class="small toggle ${state.seatEdit ? 'on' : ''}" id="btnSeatEdit">${state.seatEdit ? 'Sitzplan fertig' : 'Sitzplan bearbeiten'}</button>${editTools}</div>
+    ${state.seatEdit ? '<p class="hint">Kacheln mit Maus oder Finger an die gewünschte Stelle ziehen, genau wie die Tische vor dir stehen. Die Tafel ist oben. „Höhe“ vergrößert den Plan nach unten, Zoom hilft auf dem Handy.</p>' : '<p class="hint">Stempel wählen, Kachel antippen. Nochmal antippen löscht. Kacheln mit farbigem Rahmen hatten bisher die wenigsten Einträge.</p>'}
     ${lessonEditor(c)}
-    ${!c.students.length ? '<div class="empty">Noch keine Schüler im Kurs.</div>' : !l ? '<div class="empty">Noch keine Stunde. Tippe auf „+ Stunde“.</div>' : `<div class="tiles" style="--cols:${c.settings.seatCols || 6}">${tiles}</div>`}
+    ${!c.students.length ? '<div class="empty">Noch keine Schüler im Kurs.</div>' : !l ? '<div class="empty">Noch keine Stunde. Tippe auf „+ Stunde“.</div>' : `<div class="boardwrap"><div class="board ${state.seatEdit ? 'edit' : ''}" id="board" style="width:${(boardZoom() * 100).toFixed(0)}%;aspect-ratio:100/${H}"><div class="tafel">Tafel</div>${tiles}</div></div>`}
   </section>`;
 }
 function sumCell(c, sid){
@@ -1182,9 +1189,25 @@ document.addEventListener('click', e => { if (!e.target.closest('#popover') && !
 
 const view = $('#view');
 view.addEventListener('focusout', () => { if (sync.deferRender) { sync.deferRender = false; setTimeout(() => { if (!isTyping()) render(); else sync.deferRender = true; }, 150); } });
-let micTimer = null;
-view.addEventListener('pointerdown', e => { if (e.target.closest('#btnMic')) { micTimer = setTimeout(() => { micTimer = null; undoDictation(); }, 700); } });
-view.addEventListener('pointerup', e => { if (micTimer) { clearTimeout(micTimer); micTimer = null; if (e.target.closest('#btnMic')) startDictation(); } });
+let micTimer = null, drag = null;
+view.addEventListener('pointerdown', e => {
+  if (e.target.closest('#btnMic')) { micTimer = setTimeout(() => { micTimer = null; undoDictation(); }, 700); return; }
+  const tile = e.target.closest('.board.edit .tile'); if (!tile) return;
+  const board = tile.parentElement; const r = board.getBoundingClientRect(); const tr = tile.getBoundingClientRect();
+  drag = { tile, sid: tile.dataset.tile, r, H: 100 * r.height / r.width, dx: e.clientX - tr.left, dy: e.clientY - tr.top, moved: false };
+  tile.classList.add('dragging'); try { tile.setPointerCapture(e.pointerId); } catch (err) {} e.preventDefault();
+});
+view.addEventListener('pointermove', e => {
+  if (!drag) return; const { tile, r, H, dx, dy } = drag;
+  // Einheiten: Plan ist 100 breit und H hoch
+  let x = (e.clientX - dx - r.left) / r.width * 100, y = (e.clientY - dy - r.top) / r.width * 100;
+  if (state.snap) { x = Math.round(x / 5) * 5; y = Math.round(y / 5) * 5; }
+  x = Math.min(100 - TILE_W, Math.max(0, x)); y = Math.min(H - TILE_H, Math.max(0, y));
+  tile.style.left = x + '%'; tile.style.top = (y / H * 100) + '%'; drag.x = x; drag.y = y; drag.moved = true;
+});
+const endDrag = () => { if (!drag) return; drag.tile.classList.remove('dragging'); if (drag.moved) { const st = course().students.find(s => s.id === drag.sid); if (st) { st.pos = { x: +drag.x.toFixed(1), y: +drag.y.toFixed(1) }; sync.mark(); } } drag = null; };
+view.addEventListener('pointerup', e => { if (micTimer) { clearTimeout(micTimer); micTimer = null; if (e.target.closest('#btnMic')) startDictation(); } endDrag(); });
+view.addEventListener('pointercancel', endDrag);
 view.addEventListener('click', async e => {
   const c = course(); const t = e.target;
   if (t.closest('#btnMic')) return;
@@ -1192,8 +1215,10 @@ view.addEventListener('click', async e => {
   const stamp = t.closest('[data-stamp]'); if (stamp) { state.stamp = stamp.dataset.stamp; $$('.stamp').forEach(b => b.classList.toggle('active', b === stamp)); persistLocal(); return; }
   const cell = t.closest('td.cell'); if (cell) { const cur = (c.marks[cell.dataset.sid] || {})[cell.dataset.lid] || ''; applyMark(cell, cur === state.stamp ? '' : state.stamp); return; }
   const tile = t.closest('.tile'); if (tile) {
-    if (state.seatEdit) { if (!state.seatSel) { state.seatSel = tile.dataset.tile; renderView(); } else { const a = c.students.find(s => s.id === state.seatSel), b = c.students.find(s => s.id === tile.dataset.tile); if (a && b && a !== b) { const tmp = a.seat; a.seat = b.seat; b.seat = tmp; sync.mark(); } state.seatSel = null; renderView(); } return; }
+    if (state.seatEdit) return;
     const l = curLesson(c); if (!l) return; const cur = (c.marks[tile.dataset.tile] || {})[l.id] || ''; applyMark(tile, cur === state.stamp ? '' : state.stamp); return; }
+  const bz = t.closest('[data-zoom]'); if (bz) { state.boardZoom = Math.min(4, Math.max(0.5, +(boardZoom() + (+bz.dataset.zoom)).toFixed(1))); persistLocal(); renderView(); return; }
+  const bh = t.closest('[data-boardh]'); if (bh) { c.settings.boardH = Math.min(300, Math.max(40, boardHeight(c) + (+bh.dataset.boardh))); sync.mark(); renderView(); return; }
   const fo = t.closest('[data-focus]'); if (fo) { const row = $('#row-' + fo.dataset.focus); if (row) { row.scrollIntoView({ block: 'center' }); row.classList.add('focus'); } return; }
   const lh = t.closest('[data-edit-lesson]'); if (lh) { state.editLesson = state.editLesson === lh.dataset.editLesson ? null : lh.dataset.editLesson; renderView(); return; }
   const ih = t.closest('[data-edit-item]'); if (ih) { state.editItem = state.editItem === ih.dataset.editItem ? null : ih.dataset.editItem; renderView(); return; }
@@ -1210,7 +1235,9 @@ view.addEventListener('click', async e => {
     case 'btnDeleteLesson': { const l = c.lessons.find(x => x.id === state.editLesson); if (l && await confirmA(`Spalte vom ${longDate(l.date)} mit allen Einträgen löschen?`)) { c.lessons = c.lessons.filter(x => x.id !== l.id); for (const sid in c.marks) delete c.marks[sid][l.id]; for (const sid in c.reasons) delete c.reasons[sid][l.id]; state.editLesson = null; if (state.curLesson === l.id) state.curLesson = null; sync.mark(); renderView(); } break; }
     case 'btnCloseLesson': state.editLesson = null; renderView(); break;
     case 'btnViewMode': state.viewMode = state.viewMode === 'kacheln' ? 'tabelle' : 'kacheln'; state.seatEdit = false; state.seatSel = null; persistLocal(); renderView(); break;
-    case 'btnSeatEdit': state.seatEdit = !state.seatEdit; state.seatSel = null; renderView(); break;
+    case 'btnSeatEdit': state.seatEdit = !state.seatEdit; renderView(); break;
+    case 'btnSnap': state.snap = !state.snap; persistLocal(); btn.classList.toggle('on', state.snap); break;
+    case 'btnAutoSeat': seatOrder(c).forEach((st, i) => { st.pos = defaultPos(c, i); }); c.settings.boardH = 0; sync.mark(); renderView(); break;
     case 'btnReasonMode': state.reasonMode = !state.reasonMode; persistLocal(); btn.classList.toggle('on', state.reasonMode); break;
     case 'btnAddItem': { const key = btn.dataset.key; const it = newItem(`${btn.dataset.singular} ${c[key].length + 1}`, key === 'tests' ? 20 : 40); c[key].push(it); state.editItem = it.id; sync.mark(); renderView(); break; }
     case 'btnDeleteItem': { const key = state.tab === 'ka' ? 'klassenarbeiten' : 'tests'; const it = c[key].find(x => x.id === state.editItem); if (it && await confirmA(`„${it.name}“ mit allen Ergebnissen löschen?`)) { c[key] = c[key].filter(x => x.id !== it.id); state.editItem = null; sync.mark(); renderView(); } break; }
