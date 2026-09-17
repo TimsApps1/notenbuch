@@ -727,6 +727,7 @@ function renderView(){
     case 'speicher': html = renderSpeicher(); break;
   }
   $('#view').innerHTML = banner + html;
+  if (state.tab === 'speicher') prepareDbxLink();
 }
 const STAMPS = [['++','++','Sehr gute Leistung'],['+','+','Gute Leistung'],['o','○','Neutral (ausdrücklich)'],['-','–','Schwache Leistung'],['--','––','Sehr schwache Leistung, z. B. Arbeitsverweigerung'],['F','F','Fehlt (zählt nicht)'],['','⌫','Eintrag löschen']];
 function stampBar(){ return `<div class="stamps" role="group" aria-label="Stempel"><span class="tb-label">Stempel</span>${STAMPS.map(([v,l,t]) => `<button class="stamp s-${MARK_CLS[v]} ${state.stamp === v ? 'active' : ''}" data-stamp="${v}" title="${t}">${l}</button>`).join('')}<button class="small toggle ${state.reasonMode ? 'on' : ''}" id="btnReasonMode" title="Nach jedem Stempel ein Kriterium auswählen">mit Grund</button></div>`; }
@@ -1022,7 +1023,7 @@ function renderSpeicher(){
       ${!hasClaude ? `<div class="card">
         <h3>Dropbox verbinden</h3>
         <p class="hint">Einmalig: Unter dropbox.com/developers/apps eine App anlegen („Scoped access“, „App folder“, Berechtigungen files.content.write, files.content.read, files.metadata.read), dann den <b>App key</b> hier eintragen. Danach „Anmelden“, bei Dropbox bestätigen, den angezeigten Code hier einfügen.</p>
-        <div class="row"><label>App key<input type="text" id="dbxKey" value="${esc(dbx.appKey)}" placeholder="z. B. a1b2c3d4e5f6g7h"></label><button id="btnDbxAuth" class="primary">1. Bei Dropbox anmelden</button></div>
+        <div class="row"><label>App key<input type="text" id="dbxKey" value="${esc(dbx.appKey)}" placeholder="z. B. a1b2c3d4e5f6g7h" autocapitalize="off" autocorrect="off"></label><a id="btnDbxAuth" class="button primary" href="#" target="_blank" rel="noopener" style="display:inline-block;padding:6px 12px;border-radius:6px;background:var(--accent);color:var(--accent-ink);font-weight:600;text-decoration:none">1. Bei Dropbox anmelden</a><button class="small" id="btnDbxCopyLink" title="Falls sich nichts öffnet: Link kopieren und in Safari einfügen">Link kopieren</button></div>
         <div class="row"><label>Code von Dropbox<input type="text" id="dbxCode" placeholder="Code hier einfügen"></label><button id="btnDbxCode">2. Code bestätigen</button></div>
         <p class="flag">${dbx.refreshToken ? `Angemeldet${dbx.account ? ' als ' + esc(dbx.account) : ''}. ` : 'Nicht angemeldet. '}${dbx.refreshToken ? '<button class="small" id="btnDbxDisconnect">Trennen</button>' : ''}${sync.lastError && t === 'dropbox' ? `<br><span class="flag warn">Letzter Fehler: ${esc(sync.lastError)}</span>` : ''}</p>
         <div class="row"><button class="small" id="btnDbxDiag">Verbindung prüfen</button><label>App secret (nur falls die Prüfung es verlangt)<input type="password" id="dbxSecret" value="${esc(dbx.appSecret || '')}" placeholder="optional"></label></div>
@@ -1148,6 +1149,13 @@ function startDictation(){
 }
 function undoDictation(){ const c = course(); if (!lastDictation) return; for (const d of lastDictation) setMark(c, d.sid, d.lid, d.prev); lastDictation = null; sync.mark(); renderView(); toast('Diktat rückgängig gemacht'); }
 
+let dbxLinkTimer = null;
+function prepareDbxLink(){
+  const inp = $('#dbxKey'), a = $('#btnDbxAuth'); if (!inp || !a) return;
+  const key = inp.value.trim(); if (!key) { a.href = '#'; return; }
+  storeCfg.dropbox.appKey = key; saveStoreCfg();
+  clearTimeout(dbxLinkTimer); dbxLinkTimer = setTimeout(async () => { try { a.href = await dropboxAuthUrl(key); } catch (e) { a.href = '#'; } }, 250);
+}
 // ---------- Events ----------
 $('#courseSelect').addEventListener('change', e => { state.active = e.target.value; state.editLesson = state.editItem = state.detail = state.curLesson = null; persistLocal(); render(); });
 $('#btnNewCourse').addEventListener('click', async () => {
@@ -1174,6 +1182,7 @@ view.addEventListener('pointerup', e => { if (micTimer) { clearTimeout(micTimer)
 view.addEventListener('click', async e => {
   const c = course(); const t = e.target;
   if (t.closest('#btnMic')) return;
+  const auth = t.closest('#btnDbxAuth'); if (auth) { if (!auth.href || auth.href.endsWith('#')) { e.preventDefault(); alertA('Bitte zuerst den App key eintragen und einen Moment warten.'); } else toast('Bei Dropbox „Zulassen“ tippen, Code kopieren und hier unten einfügen', 7000); return; }
   const stamp = t.closest('[data-stamp]'); if (stamp) { state.stamp = stamp.dataset.stamp; $$('.stamp').forEach(b => b.classList.toggle('active', b === stamp)); persistLocal(); return; }
   const cell = t.closest('td.cell'); if (cell) { const cur = (c.marks[cell.dataset.sid] || {})[cell.dataset.lid] || ''; applyMark(cell, cur === state.stamp ? '' : state.stamp); return; }
   const tile = t.closest('.tile'); if (tile) {
@@ -1221,7 +1230,7 @@ view.addEventListener('click', async e => {
     case 'btnBackup2': backup(); break;
     case 'btnRestore2': $('#fileRestore').click(); break;
     case 'btnSyncNow': { const sec = $('#dbxSecret'); if (sec) { storeCfg.dropbox.appSecret = sec.value.trim(); saveStoreCfg(); } sync.lastError = null; await sync.start(); renderView(); toast(sync.lastError ? 'Fehler: ' + sync.lastError : 'Abgleich ausgeführt', 6000); break; }
-    case 'btnDbxAuth': { const key = $('#dbxKey').value.trim(); if (!key) { alertA('Bitte zuerst den App key eintragen.'); return; } storeCfg.dropbox.appKey = key; saveStoreCfg(); const url = await dropboxAuthUrl(key); window.open(url, '_blank'); toast('Bei Dropbox bestätigen, dann den Code unten einfügen', 6000); break; }
+    case 'btnDbxCopyLink': { const a = $('#btnDbxAuth'); if (!a || !a.href || a.href.endsWith('#')) { alertA('Bitte zuerst den App key eintragen.'); return; } try { await navigator.clipboard.writeText(a.href); toast('Link kopiert – in Safari einfügen und öffnen', 5000); } catch (e) { await ask('Diesen Link in Safari öffnen:', { input: a.href, okLabel: 'OK', cancel: false }); } break; }
     case 'btnDbxCode': { const code = $('#dbxCode').value.trim(); const key = $('#dbxKey').value.trim(); if (!code || !key) { alertA('App key und Code eintragen.'); return; }
       try { const tok = await dropboxExchange(key, code); storeCfg.dropbox.appKey = key; storeCfg.dropbox.refreshToken = tok.refresh_token; saveStoreCfg(); const ad = new DropboxAdapter(storeCfg.dropbox); try { await ad.connect(); storeCfg.dropbox.account = await ad.account(); } catch (e) {} saveStoreCfg(); await sync.switchTo('dropbox'); renderView(); toast('Dropbox verbunden'); }
       catch (e) { alertA('Verbindung fehlgeschlagen: ' + e.message); } break; }
@@ -1245,6 +1254,7 @@ view.addEventListener('keydown', e => {
 });
 view.addEventListener('input', e => {
   const c = course(); const t = e.target;
+  if (t.id === 'dbxKey') { prepareDbxLink(); return; }
   if (t.matches('input.pts')) { const it = c[t.dataset.key].find(x => x.id === t.dataset.tid); if (!it) return;
     it.results[t.dataset.sid] = t.value.trim(); if (!it.results[t.dataset.sid]) delete it.results[t.dataset.sid];
     const g = einzelNote(c, it, t.dataset.sid); const fl = parseResult(t.value).flags; const sp = t.nextElementSibling; sp.textContent = fmt(g, 1) + (fl ? ' ' + fl : ''); sp.className = 'cellnote ' + gClass(g);
