@@ -372,8 +372,9 @@ function defaultSettings(){
 function newCourse(name, fach = '', halbjahr = ''){
   return { id: uid(), schema: SCHEMA, name, fach, halbjahr, created: Date.now(), updated: Date.now(), synced: false, archived: false, archivedAt: null,
     settings: defaultSettings(), kinds: DEF_KINDS(), criteria: DEF_CRIT(), schedule: [], students: [], lessons: [], marks: {}, reasons: {}, tests: [], klassenarbeiten: [],
-    checklist: { nachschreiberOk: false, spiegelSeen: false } };
+    plans: [newPlan('Sitzplan 1')], checklist: { nachschreiberOk: false, spiegelSeen: false } };
 }
+function newPlan(name){ return { id: uid(), name, pos: {}, boardH: 0 }; }
 function newStudent(name){ return { id: uid(), name, alias: '', seat: null, pos: null, vornote: null, override: null, bem: '', vermerk: '', gespraeche: [] }; }
 function newLesson(kind = 'stunde', date = today()){ return { id: uid(), date, topic: '', kind, ausfall: false, status: 'offen' }; }
 function newItem(name, max = 20){ return { id: uid(), name, date: today(), max, weight: 1, mode: 'punkte', shift: 0, results: {} }; }
@@ -403,7 +404,11 @@ function migrate(c){
   c.schedule ||= []; c.students ||= []; c.lessons ||= []; c.marks ||= {}; c.reasons ||= {}; c.tests ||= []; c.klassenarbeiten ||= [];
   c.checklist = Object.assign({ nachschreiberOk: false, spiegelSeen: false }, c.checklist || {});
   c.archived = !!c.archived; c.archivedAt ||= null;
-  c.students.forEach(s => { s.alias ??= ''; s.seat ??= null; s.pos ??= null; s.vornote ??= null; s.override ??= null; s.bem ??= ''; s.vermerk ??= ''; if (!Array.isArray(s.gespraeche)) s.gespraeche = []; });
+  c.students.forEach(s => { s.alias ??= ''; s.seat ??= null; s.vornote ??= null; s.override ??= null; s.bem ??= ''; s.vermerk ??= ''; if (!Array.isArray(s.gespraeche)) s.gespraeche = []; });
+  // Sitzpläne: alte Einzelpositionen (st.pos) wandern in den ersten Plan
+  if (!Array.isArray(c.plans) || !c.plans.length) { const p = newPlan('Sitzplan 1'); p.boardH = c.settings.boardH || 0; for (const s of c.students) if (s.pos) p.pos[s.id] = s.pos; c.plans = [p]; }
+  c.students.forEach(s => { delete s.pos; });
+  c.plans.forEach(p => { p.pos ||= {}; p.boardH ||= 0; p.name ||= 'Sitzplan'; });
   // Stundenstatus: Bestandsdaten gelten als abgeschlossen, damit vorhandene Noten unverändert bleiben
   c.lessons.forEach(l => { l.kind ||= 'stunde'; l.ausfall = !!l.ausfall; l.topic ||= ''; if (!l.status) l.status = old ? 'abgeschlossen' : 'offen'; });
   [...c.tests, ...c.klassenarbeiten].forEach(t => { t.shift ||= 0; t.weight ||= 1; t.mode ||= 'punkte'; t.results ||= {};
@@ -606,7 +611,7 @@ function stampChanges(c, base){
   if (!base) return;
   if (KURS_FELDER.some(k => j(c[k]) !== j(base[k]))) c.kursU = now;
   const byId = list => new Map((list || []).map(x => [x.id, x]));
-  for (const [list, bl] of [[c.students, base.students], [c.lessons, base.lessons], [c.tests, base.tests], [c.klassenarbeiten, base.klassenarbeiten]]) {
+  for (const [list, bl] of [[c.students, base.students], [c.lessons, base.lessons], [c.tests, base.tests], [c.klassenarbeiten, base.klassenarbeiten], [c.plans, base.plans]]) {
     const bm = byId(bl); for (const x of list) { const b = bm.get(x.id); if (!b || j(x) !== j(b)) x.u = now; }
   }
 }
@@ -622,6 +627,7 @@ function deepMergeCourse(lc, rc){
   out.lessons = union(newer.lessons, older.lessons, (n, o) => clone(pick(n, o)));
   const mergeItems = (a, b) => union(a, b, (n, o) => { const w = clone(pick(n, o)); w.results = Object.assign({}, o.results, n.results, pick(n, o) === n ? n.results : o.results); return w; });
   out.tests = mergeItems(newer.tests, older.tests); out.klassenarbeiten = mergeItems(newer.klassenarbeiten, older.klassenarbeiten);
+  out.plans = union(newer.plans, older.plans, (n, o) => { const w = clone(pick(n, o)); w.pos = Object.assign({}, o.pos, n.pos, pick(n, o) === n ? n.pos : o.pos); return w; });
   const mergeMap = (n, o) => { const r = {}; for (const k of new Set([...Object.keys(o || {}), ...Object.keys(n || {})])) r[k] = Object.assign({}, (o || {})[k], (n || {})[k]); return r; };
   out.marks = mergeMap(newer.marks, older.marks); out.reasons = mergeMap(newer.reasons, older.reasons);
   out.updated = Math.max(lc.updated || 0, rc.updated || 0); out.synced = false;
@@ -648,6 +654,7 @@ function sampleCourse(){
   c.isExample = true;
   const names = ['AL','BT','CE','DS','EM','FJ','GL','HN','IM','JF'];
   c.students = names.map((n, i) => { const s = newStudent(n); s.seat = i; return s; });
+  c.plans = [newPlan('Kursraum'), newPlan('Klassenraum')];
   const d = new Date(); const dates = [];
   while (dates.length < 7) { d.setDate(d.getDate() - 1); if (d.getDay() % 6 !== 0) dates.unshift(isoDate(d)); }
   const topics = ['Sicherheit im Labor','Stoffeigenschaften','Dichte messen','Dichte Übung','Aggregatzustände','Teilchenmodell','Wiederholung'];
@@ -676,7 +683,7 @@ function sampleCourse(){
   return c;
 }
 return { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS, DEF_CRIT, DEF_AMPEL, WD, SCHEMA,
-  uid, clamp, num, isoDate, today, daysAgo, clone, fmt, defaultSettings, newCourse, newStudent, newLesson, newItem, parseResultText, migrateResult, migrate,
+  uid, clamp, num, isoDate, today, daysAgo, clone, fmt, defaultSettings, newCourse, newPlan, newStudent, newLesson, newItem, parseResultText, migrateResult, migrate,
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, sampleCourse };
 })();
@@ -685,12 +692,12 @@ return { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS,
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'Version 8';
+const APP_VERSION = 'Version 9';
 const KEY = 'notenbuch-sek1-v2';
 const KEY_OLD = 'notenbuch-sek1-v1';
 const STORE_KEY = 'notenbuch-storage-v1';
 const { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS, DEF_CRIT, DEF_AMPEL, WD,
-  uid, clamp, num, isoDate, today, daysAgo, clone, fmt, defaultSettings, newCourse, newStudent, newLesson, newItem, parseResultText, migrateResult, migrate,
+  uid, clamp, num, isoDate, today, daysAgo, clone, fmt, defaultSettings, newCourse, newPlan, newStudent, newLesson, newItem, parseResultText, migrateResult, migrate,
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, sampleCourse } = window.NB;
 const isStandalone = () => window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
@@ -999,7 +1006,20 @@ function micButton(){ const ok = !!(window.SpeechRecognition || window.webkitSpe
 function curLesson(c){ let l = c.lessons.find(x => x.id === state.curLesson); if (!l) { l = [...c.lessons].filter(x => !x.ausfall).sort((a, b) => a.date.localeCompare(b.date)).pop(); state.curLesson = l ? l.id : null; } return l; }
 function seatOrder(c){ return [...c.students].sort((a, b) => (a.seat ?? 999) - (b.seat ?? 999)); }
 function defaultPos(c, i){ const cols = Math.max(2, c.settings.seatCols || 6); const gap = (100 - cols * TILE_W) / (cols + 1); return { x: +(gap + (i % cols) * (TILE_W + gap)).toFixed(1), y: +(9 + Math.floor(i / cols) * (TILE_H + 4)).toFixed(1) }; }
-function boardHeight(c){ if (c.settings.boardH) return c.settings.boardH; let maxY = 0; seatOrder(c).forEach((st, i) => { const p = st.pos || defaultPos(c, i); maxY = Math.max(maxY, p.y); }); return Math.max(50, Math.ceil(maxY + TILE_H + 5)); }
+function currentPlan(c, l){
+  if (!c.plans || !c.plans.length) c.plans = [newPlan('Sitzplan 1')];
+  const lid = l ? l.id : null; const sel = state.planSel;
+  if (sel && sel.cid === c.id && sel.lid === lid) { const p = c.plans.find(x => x.id === sel.pid); if (p) return p; }
+  if (l && l.date) { const wd = new Date(l.date + 'T12:00:00').getDay(); const e = c.schedule.find(x => +x.wd === wd && x.plan); const p = e && c.plans.find(x => x.id === e.plan); if (p) return p; }
+  return c.plans[0];
+}
+function boardHeight(c, plan){ plan = plan || currentPlan(c, curLesson(c)); if (plan.boardH) return plan.boardH; let maxY = 0; seatOrder(c).forEach((st, i) => { const p = plan.pos[st.id] || defaultPos(c, i); maxY = Math.max(maxY, p.y); }); return Math.max(50, Math.ceil(maxY + TILE_H + 5)); }
+function planBar(c, l, edit){
+  const plan = currentPlan(c, l);
+  const sel = c.plans.length > 1 || edit ? `<label>Sitzplan <select id="planSel" data-ro="1">${c.plans.map(p => `<option value="${p.id}" ${p.id === plan.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>` : '';
+  const tools = edit ? `<button class="small" id="btnPlanAdd" title="Weiteren Sitzplan anlegen, z. B. für einen anderen Raum">+ Sitzplan</button><button class="small" id="btnPlanRename">Umbenennen</button>${c.plans.length > 1 ? '<button class="small danger" id="btnPlanDelete">Sitzplan löschen</button>' : ''}` : '';
+  return sel + tools;
+}
 function boardZoom(){ return state.boardZoom || (window.innerWidth < 700 ? 1.8 : 1); }
 // Positionen werden immer aus Sicht der Klasse gespeichert (Tafel oben). Aus Lehrersicht (Tafel im Rücken) wird der Plan um 180° gedreht.
 const teacherView = () => (state.perspective || 'lehrer') === 'lehrer';
@@ -1007,11 +1027,11 @@ function toDisplay(p, H){ return teacherView() ? { x: 100 - p.x - TILE_W, y: H -
 function fromDisplay(p, H){ return toDisplay(p, H); }
 function zoomBar(){ return `<span class="flag">Zoom</span><button class="small" data-zoom="-0.3" data-ro="1" title="Kleiner">−</button><button class="small" data-zoom="0.3" data-ro="1" title="Größer">+</button><button class="small" id="btnFit" data-ro="1" title="Ganze Klasse ins Fenster einpassen">Einpassen</button><button class="small toggle" id="btnPersp" data-ro="1" title="Blickrichtung wechseln">${teacherView() ? 'Blick: vom Pult' : 'Blick: aus der Klasse'}</button>`; }
 function boardHtml(c, l, edit){
-  const focus = new Set(focusStudents(c).map(s => s.id));
-  const H = boardHeight(c); const th = (TILE_H / H * 100).toFixed(2);
-  const tiles = seatOrder(c).map((st, i) => { const m = l ? ((c.marks[st.id] || {})[l.id] || '') : ''; const r = l ? ((c.reasons[st.id] || {})[l.id] || '') : ''; const g = mitarbeit(c, st.id).note; const p = toDisplay(st.pos || defaultPos(c, i), H); const ar = arrow(tendenz4(c, st).delta);
+  const focus = new Set(focusStudents(c).map(s => s.id)); const plan = currentPlan(c, l);
+  const H = boardHeight(c, plan); const th = (TILE_H / H * 100).toFixed(2);
+  const tiles = seatOrder(c).map((st, i) => { const m = l ? ((c.marks[st.id] || {})[l.id] || '') : ''; const r = l ? ((c.reasons[st.id] || {})[l.id] || '') : ''; const g = mitarbeit(c, st.id).note; const p = toDisplay(plan.pos[st.id] || defaultPos(c, i), H); const ar = arrow(tendenz4(c, st).delta);
     return `<div class="tile m-${MARK_CLS[m]} ${focus.has(st.id) ? 'focus' : ''} ${r ? 'hasreason' : ''}" data-tile="${st.id}" title="${esc(r || ar.text)}" style="left:${p.x.toFixed(1)}%;top:${(p.y / H * 100).toFixed(2)}%;width:${TILE_W}%;height:${th}%"><span class="tn">${esc(st.name)} <span class="trend ${ar.cls}">${ar.sym}</span></span><span class="tm">${MARK_LABEL[m]}</span><span class="tg">${fmt(g, 1)}</span></div>`; }).join('');
-  return `<div class="boardwrap" id="boardwrap"><div class="board ${edit ? 'edit' : ''} ${teacherView() ? 'lehrer' : ''}" id="board" style="width:${(boardZoom() * 100).toFixed(0)}%;aspect-ratio:100/${H}"><div class="tafel">${teacherView() ? 'Tafel · hier stehst du' : 'Tafel'}</div>${tiles}</div></div>`;
+  return `<div class="boardwrap" id="boardwrap"><div class="board ${edit ? 'edit' : ''} ${teacherView() ? 'lehrer' : ''}" id="board" data-plan="${plan.id}" style="width:${(boardZoom() * 100).toFixed(0)}%;aspect-ratio:100/${H}"><div class="tafel">${teacherView() ? 'Tafel · hier stehst du' : 'Tafel'}${c.plans.length > 1 ? ' · ' + esc(plan.name) : ''}</div>${tiles}</div></div>`;
 }
 function renderKacheln(c){
   const l = curLesson(c);
@@ -1019,8 +1039,8 @@ function renderKacheln(c){
   const editTools = state.seatEdit ? `<button class="small toggle ${state.snap ? 'on' : ''}" id="btnSnap" title="Kacheln beim Loslassen am Raster ausrichten">Raster</button><button class="small" id="btnAutoSeat" title="Alle Kacheln in Reihen anordnen">Automatisch anordnen</button><span class="flag">Höhe</span><button class="small" data-boardh="-10">−</button><button class="small" data-boardh="10">+</button>` : '';
   return `<section class="pane">
     <div class="toolbar">${stampBar()}<div class="spacer"></div>${viewToggle()}${micButton()}${addBar(c)}</div>
-    <div class="toolbar"><label>Spalte ${sel}</label>${l && l.status !== 'abgeschlossen' ? `<button class="small primary" data-review-lesson="${c.id}:${l.id}">Diese Stunde durchsehen und abschließen</button>` : ''}${focusBar(c)}<div class="spacer"></div>${zoomBar()}<button class="small toggle ${state.seatEdit ? 'on' : ''}" id="btnSeatEdit">${state.seatEdit ? 'Sitzplan fertig' : 'Sitzplan bearbeiten'}</button>${editTools}</div>
-    ${state.seatEdit ? '<p class="hint">Kacheln mit Maus oder Finger dorthin ziehen, wo die Tische stehen. Blick vom Pult: Du stehst unten an der Tafel und schaust in die Klasse. Leere Fläche mit der Maus ziehen verschiebt den Plan, Strg + Mausrad zoomt. „Höhe“ macht den Plan länger.</p>' : '<p class="hint">Stempel wählen, Kachel antippen. Nochmal antippen löscht. Pfeil neben dem Namen: ↑ besser, → gleich, ↓ schlechter als vor 4 Wochen. Farbiger Rahmen: am längsten ohne Eintrag. Leere Fläche ziehen verschiebt, Strg + Mausrad zoomt.</p>'}
+    <div class="toolbar"><label>Spalte ${sel}</label>${planBar(c, l, state.seatEdit)}${l && l.status !== 'abgeschlossen' ? `<button class="small primary" data-review-lesson="${c.id}:${l.id}">Diese Stunde durchsehen und abschließen</button>` : ''}${focusBar(c)}<div class="spacer"></div>${zoomBar()}<button class="small toggle ${state.seatEdit ? 'on' : ''}" id="btnSeatEdit">${state.seatEdit ? 'Sitzplan fertig' : 'Sitzplan bearbeiten'}</button>${editTools}</div>
+    ${state.seatEdit ? '<p class="hint">Kacheln mit Maus oder Finger dorthin ziehen, wo die Tische stehen. Blick vom Pult: Du stehst unten an der Tafel und schaust in die Klasse. Mehrere Sitzpläne (z. B. Kursraum und Klassenraum) legst du mit „+ Sitzplan“ an; im Stundenplan unter Einstellungen kannst du je Wochentag den passenden Plan wählen. Leere Fläche ziehen verschiebt, Strg + Mausrad zoomt, „Höhe“ macht den Plan länger.</p>' : '<p class="hint">Stempel wählen, Kachel antippen. Nochmal antippen löscht. Stempel zählen zur Stunde, egal in welchem Sitzplan du sie setzt. Pfeil: ↑ besser, → gleich, ↓ schlechter als vor 4 Wochen. Farbiger Rahmen: am längsten ohne Eintrag.</p>'}
     ${lessonEditor(c)}
     ${!c.students.length ? '<div class="empty">Noch keine Schüler im Kurs.</div>' : !l ? '<div class="empty">Noch keine Stunde. Tippe auf „+ Stunde“.</div>' : boardHtml(c, l, state.seatEdit)}
   </section>`;
@@ -1032,7 +1052,7 @@ function renderReview(c){
   return `<section class="pane">
     <div class="toolbar"><button id="btnReviewBack" data-ro="1">← Zurück</button><h2>Stunde durchsehen</h2><span class="flag">${pos >= 0 ? `${pos + 1} von ${all.length} offenen` : 'bereits abgeschlossen'}</span></div>
     <div class="banner info"><b>${esc(c.name)}</b> · ${longDate(l.date)}${l.topic ? ' · ' + esc(l.topic) : ''}${kindOf(c, l).id !== 'stunde' ? ' · ' + esc(kindOf(c, l).name) : ''}</div>
-    <div class="toolbar">${stampBar()}<div class="spacer"></div>${zoomBar()}${micButton()}</div>
+    <div class="toolbar">${stampBar()}${planBar(c, l, false)}<div class="spacer"></div>${zoomBar()}${micButton()}</div>
     <p class="hint">Wer ist dir aufgefallen? Stempel wählen, Kind antippen. Wer gefehlt hat, bekommt F. Alle anderen zählen nach dem Abschließen als „nichts aufgefallen“ (${fmt(c.settings.values.n, 1)}).</p>
     ${c.students.length ? boardHtml(c, l, false) : '<div class="empty">Keine Schüler im Kurs.</div>'}
     <div class="reviewbar"><button id="btnReviewLater">Später</button><button class="primary" id="btnReviewClose">${l.status === 'abgeschlossen' ? 'Abgeschlossen lassen und weiter' : 'Stunde abschließen'}</button></div>
@@ -1319,7 +1339,8 @@ function renderSchueler(c){
 function renderEinstellungen(c){
   const s = c.settings, v = s.values, a = s.ampel;
   const numIn = (path, val, extra = '') => `<input type="number" data-set="${path}" value="${val}" ${extra}>`;
-  const sched = [1,2,3,4,5].map(wd => { const e = c.schedule.find(x => +x.wd === wd); return `<label>${WD[wd]}<input type="checkbox" data-sched="${wd}" ${e ? 'checked' : ''}><input type="text" data-sched-label="${wd}" value="${esc(e ? e.label : '')}" placeholder="z. B. 3. Std" ${e ? '' : 'disabled'}></label>`; }).join('');
+  const planSel = wd => c.plans.length > 1 ? `<select data-sched-plan="${wd}" title="Sitzplan an diesem Tag">${c.plans.map(p => { const e = c.schedule.find(x => +x.wd === wd); return `<option value="${p.id}" ${e && e.plan === p.id ? 'selected' : ''}>${esc(p.name)}</option>`; }).join('')}</select>` : '';
+  const sched = [1,2,3,4,5].map(wd => { const e = c.schedule.find(x => +x.wd === wd); return `<label>${WD[wd]}<input type="checkbox" data-sched="${wd}" ${e ? 'checked' : ''}><input type="text" data-sched-label="${wd}" value="${esc(e ? e.label : '')}" placeholder="z. B. 3. Std" ${e ? '' : 'disabled'}>${e ? planSel(wd) : ''}</label>`; }).join('');
   return `<section class="pane">
     <h2>Einstellungen für „${esc(c.name)}“</h2>
     <div class="form">
@@ -1331,7 +1352,7 @@ function renderEinstellungen(c){
         <div class="row"><button id="btnDuplicate" title="Gleiche Schüler und Einstellungen, Zeugnisnoten werden als Vornote übernommen">Kurs für 2. Halbjahr kopieren</button><button class="danger" id="btnDeleteCourse">Kurs löschen</button></div>
         <h3>Stundenplan</h3>
         <div class="sched">${sched}</div>
-        <p class="hint">Mit Stundenplan bietet die Mitarbeit-Ansicht „Stunden nachtragen“ an und legt fehlende Spalten bis heute als offene Stunden an.</p>
+        <p class="hint">Mit Stundenplan bietet die Mitarbeit-Ansicht „Stunden nachtragen“ an und legt fehlende Spalten bis heute als offene Stunden an.${c.plans.length > 1 ? ' Das Auswahlfeld je Tag legt fest, welcher Sitzplan dort automatisch angezeigt wird.' : ' Mit mehreren Sitzplänen (im Sitzplan „+ Sitzplan“) kannst du hier je Tag den Raum wählen.'}</p>
         <div class="row"><label>Kacheln je Reihe (Sitzplan)${numIn('settings.seatCols', s.seatCols, 'min="2" max="12" step="1"')}</label></div>
       </div>
       <div class="card">
@@ -1506,7 +1527,10 @@ async function archiveCourse(c){
 function duplicateCourse(c){
   const d = newCourse(c.name.replace(/\s*\(neu\)$/, ''), c.fach, /1\.\s*H/i.test(c.halbjahr || '') ? c.halbjahr.replace(/1\.\s*H/i, '2. H') : '2. Halbjahr');
   d.settings = clone(c.settings); d.settings.vornoteWeight = d.settings.vornoteWeight || 40; d.kinds = clone(c.kinds); d.criteria = clone(c.criteria); d.schedule = clone(c.schedule);
-  d.students = c.students.map(s => { const n = newStudent(s.name); n.alias = s.alias; n.seat = s.seat; n.pos = s.pos ? clone(s.pos) : null; n.vornote = gesamt(c, s).zeugnis; n.vermerk = s.vermerk || ''; n.gespraeche = clone(s.gespraeche || []); return n; });
+  const idMap = new Map();
+  d.students = c.students.map(s => { const n = newStudent(s.name); idMap.set(s.id, n.id); n.alias = s.alias; n.seat = s.seat; n.vornote = gesamt(c, s).zeugnis; n.vermerk = s.vermerk || ''; n.gespraeche = clone(s.gespraeche || []); return n; });
+  d.plans = (c.plans || []).map(p => { const q = newPlan(p.name); q.boardH = p.boardH; for (const [sid, pos] of Object.entries(p.pos || {})) if (idMap.has(sid)) q.pos[idMap.get(sid)] = clone(pos); return q; });
+  const planMap = new Map((c.plans || []).map((p, i) => [p.id, d.plans[i].id])); d.schedule.forEach(e => { if (e.plan && planMap.has(e.plan)) e.plan = planMap.get(e.plan); });
   state.courses.push(d); state.active = d.id; state.tab = 'einstellungen'; state.curLesson = null; sync.mark(d.id); render();
 }
 // ---------- Diktat ----------
@@ -1608,13 +1632,14 @@ view.addEventListener('pointermove', e => {
 const endDrag = () => {
   if (pan) { const b = $('.board'); if (b) b.classList.remove('panning'); pan = null; }
   if (!drag) return; drag.tile.classList.remove('dragging');
-  if (drag.moved) { const st = course().students.find(s => s.id === drag.sid); if (st) { const p = fromDisplay({ x: drag.x, y: drag.y }, drag.H); st.pos = { x: +p.x.toFixed(1), y: +p.y.toFixed(1) }; sync.mark(); } }
+  if (drag.moved) { const c = boardCourse(); const plan = c.plans.find(p => p.id === drag.tile.parentElement.dataset.plan) || currentPlan(c, curLesson(c)); const p = fromDisplay({ x: drag.x, y: drag.y }, drag.H); plan.pos[drag.sid] = { x: +p.x.toFixed(1), y: +p.y.toFixed(1) }; sync.mark(c.id); }
   drag = null;
 };
 view.addEventListener('pointerup', e => { if (micTimer) { clearTimeout(micTimer); micTimer = null; if (e.target.closest('#btnMic')) startDictation(); } endDrag(); });
 view.addEventListener('pointercancel', endDrag);
 view.addEventListener('wheel', e => { const wrap = e.target.closest('#boardwrap'); if (!wrap || !e.ctrlKey) return; e.preventDefault(); state.boardZoom = Math.min(4, Math.max(0.4, +(boardZoom() * (e.deltaY < 0 ? 1.15 : 1 / 1.15)).toFixed(2))); persistLocal(); const sl = wrap.scrollLeft / wrap.scrollWidth, st = wrap.scrollTop / wrap.scrollHeight; renderView(); const w2 = $('#boardwrap'); if (w2) { w2.scrollLeft = sl * w2.scrollWidth; w2.scrollTop = st * w2.scrollHeight; } }, { passive: false });
-function fitBoard(){ const wrap = $('#boardwrap'); if (!wrap) return; const c = course(); const H = boardHeight(byId(state.review ? state.review.cid : c.id) || c); const zw = 1, zh = (wrap.clientHeight / wrap.clientWidth) * 100 / H; state.boardZoom = Math.max(0.4, Math.min(zw, zh, 4)); persistLocal(); renderView(); }
+function boardCourse(){ return (state.review && byId(state.review.cid)) || course(); }
+function fitBoard(){ const wrap = $('#boardwrap'); if (!wrap) return; const c = boardCourse(); const H = boardHeight(c); const zw = 1, zh = (wrap.clientHeight / wrap.clientWidth) * 100 / H; state.boardZoom = Math.max(0.4, Math.min(zw, zh, 4)); persistLocal(); renderView(); }
 view.addEventListener('click', async e => {
   const c = course(); const t = e.target;
   if (t.closest('#btnMic')) return;
@@ -1627,11 +1652,11 @@ view.addEventListener('click', async e => {
   const cell = t.closest('td.cell'); if (cell) { const cur = (c.marks[cell.dataset.sid] || {})[cell.dataset.lid] || ''; applyMark(cell, cur === state.stamp ? '' : state.stamp); return; }
   const tile = t.closest('.tile'); if (tile) {
     if (state.seatEdit) return;
-    const rcid = state.review ? state.review.cid : c.id; const cc = byId(rcid) || c; const l = curLesson(cc); if (!l) return; const cur = (cc.marks[tile.dataset.tile] || {})[l.id] || ''; applyMark(tile, cur === state.stamp ? '' : state.stamp); return; }
+    const cc = boardCourse(); const l = curLesson(cc); if (!l) return; const cur = (cc.marks[tile.dataset.tile] || {})[l.id] || ''; applyMark(tile, cur === state.stamp ? '' : state.stamp); return; }
   const bz = t.closest('[data-zoom]'); if (bz) { state.boardZoom = Math.min(4, Math.max(0.4, +(boardZoom() + (+bz.dataset.zoom)).toFixed(1))); persistLocal(); renderView(); return; }
   if (t.closest('#btnFit')) { fitBoard(); return; }
   if (t.closest('#btnPersp')) { state.perspective = teacherView() ? 'schueler' : 'lehrer'; persistLocal(); renderView(); toast(teacherView() ? 'Blick vom Pult: Du stehst unten an der Tafel.' : 'Blick aus der Klasse: Die Tafel ist oben.', 3000); return; }
-  const bh = t.closest('[data-boardh]'); if (bh) { c.settings.boardH = Math.min(300, Math.max(40, boardHeight(c) + (+bh.dataset.boardh))); sync.mark(); renderView(); return; }
+  const bh = t.closest('[data-boardh]'); if (bh) { const plan = currentPlan(c, curLesson(c)); plan.boardH = Math.min(300, Math.max(40, boardHeight(c, plan) + (+bh.dataset.boardh))); sync.mark(); renderView(); return; }
   const fo = t.closest('[data-focus]'); if (fo) { const row = $('#row-' + fo.dataset.focus); if (row) { row.scrollIntoView({ block: 'center' }); row.classList.add('focus'); } return; }
   const lh = t.closest('[data-edit-lesson]'); if (lh) { state.editLesson = state.editLesson === lh.dataset.editLesson ? null : lh.dataset.editLesson; renderView(); return; }
   const ih = t.closest('[data-edit-item]'); if (ih) { state.editItem = state.editItem === ih.dataset.editItem ? null : ih.dataset.editItem; renderView(); return; }
@@ -1657,7 +1682,10 @@ view.addEventListener('click', async e => {
     case 'btnViewMode': state.viewMode = state.viewMode === 'kacheln' ? 'tabelle' : 'kacheln'; state.seatEdit = false; persistLocal(); renderView(); break;
     case 'btnSeatEdit': state.seatEdit = !state.seatEdit; renderView(); break;
     case 'btnSnap': state.snap = !state.snap; persistLocal(); btn.classList.toggle('on', state.snap); break;
-    case 'btnAutoSeat': seatOrder(c).forEach((st, i) => { st.pos = defaultPos(c, i); }); c.settings.boardH = 0; sync.mark(); renderView(); break;
+    case 'btnAutoSeat': { const plan = currentPlan(c, curLesson(c)); seatOrder(c).forEach((st, i) => { plan.pos[st.id] = defaultPos(c, i); }); plan.boardH = 0; sync.mark(); renderView(); break; }
+    case 'btnPlanAdd': { const name = await ask('Name des neuen Sitzplans:', { input: '', placeholder: 'z. B. Klassenraum', okLabel: 'Anlegen' }); if (!name || !name.trim()) return; const cur = currentPlan(c, curLesson(c)); const p = newPlan(name.trim()); p.pos = clone(cur.pos); p.boardH = cur.boardH; c.plans.push(p); state.planSel = { cid: c.id, lid: curLesson(c)?.id || null, pid: p.id }; sync.mark(); renderView(); toast('Neuer Sitzplan angelegt, Kacheln jetzt verschieben'); break; }
+    case 'btnPlanRename': { const plan = currentPlan(c, curLesson(c)); const name = await ask('Neuer Name für diesen Sitzplan:', { input: plan.name, okLabel: 'Speichern' }); if (!name || !name.trim()) return; plan.name = name.trim(); sync.mark(); renderView(); break; }
+    case 'btnPlanDelete': { const plan = currentPlan(c, curLesson(c)); if (c.plans.length < 2) return; if (!await confirmA(`Sitzplan „${plan.name}“ löschen? Die Stempel und Noten bleiben erhalten.`)) return; c.plans = c.plans.filter(p => p.id !== plan.id); c.schedule.forEach(e => { if (e.plan === plan.id) delete e.plan; }); state.planSel = null; sync.mark(); renderView(); break; }
     case 'btnReasonMode': state.reasonMode = !state.reasonMode; persistLocal(); btn.classList.toggle('on', state.reasonMode); break;
     case 'btnAddItem': { const key = btn.dataset.key; const it = newItem(`${btn.dataset.singular} ${c[key].length + 1}`, key === 'tests' ? 20 : 40); c[key].push(it); state.editItem = it.id; sync.mark(); renderView(); break; }
     case 'btnDeleteItem': { const key = state.tab === 'ka' ? 'klassenarbeiten' : 'tests'; const it = c[key].find(x => x.id === state.editItem); if (it && await confirmA(`„${it.name}“ mit allen Ergebnissen löschen?`)) { c[key] = c[key].filter(x => x.id !== it.id); state.editItem = null; sync.mark(); renderView(); } break; }
@@ -1731,8 +1759,10 @@ view.addEventListener('input', e => {
 });
 view.addEventListener('change', async e => {
   const c = course(); const t = e.target;
-  if (t.id === 'curLesson') { state.curLesson = t.value; persistLocal(); renderView(); return; }
+  if (t.id === 'curLesson') { state.curLesson = t.value; state.planSel = null; persistLocal(); renderView(); return; }
+  if (t.id === 'planSel') { const bc = boardCourse(); state.planSel = { cid: bc.id, lid: curLesson(bc)?.id || null, pid: t.value }; persistLocal(); renderView(); return; }
   if (c.archived) return;
+  if (t.matches('[data-sched-plan]')) { const e2 = c.schedule.find(x => +x.wd === +t.dataset.schedPlan); if (e2) { e2.plan = t.value; sync.mark(); } return; }
   if (t.id === 'itemMode') { const key = state.tab === 'ka' ? 'klassenarbeiten' : 'tests'; const it = c[key].find(x => x.id === state.editItem); if (it) { it.mode = t.value; sync.mark(); renderView(); } return; }
   if (t.id === 'itemShift' || t.id === 'itemMax' || t.id === 'itemDate') { renderView(); return; }
   if (t.id === 'lessonKind' || t.id === 'lessonAusfall') { const l = c.lessons.find(x => x.id === state.editLesson); if (!l) return; if (t.id === 'lessonKind') l.kind = t.value; else l.ausfall = t.checked; sync.mark(); renderView(); return; }
