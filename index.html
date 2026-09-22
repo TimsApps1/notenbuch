@@ -42,6 +42,7 @@
   --focus:#5AB0F5;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 var(--font);display:flex;flex-direction:column;-webkit-text-size-adjust:100%;overflow-x:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -879,7 +880,7 @@ return { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS,
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'Version 12';
+const APP_VERSION = 'Version 13';
 const KEY = 'notenbuch-sek1-v2';
 const KEY_OLD = 'notenbuch-sek1-v1';
 const STORE_KEY = 'notenbuch-storage-v1';
