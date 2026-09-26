@@ -157,7 +157,7 @@ tbody tr.focus th.sticky-col{background:var(--accent-soft)}
 .board.lehrer .tafel{top:auto;bottom:0;border-bottom:0;border-top:2px solid var(--accent);border-radius:8px 8px 0 0}
 .board.edit{background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:5% 6.667%;cursor:default}
 .tafel{position:absolute;left:25%;top:0;width:50%;height:4%;min-height:14px;background:var(--accent-soft);border-bottom:2px solid var(--accent);border-radius:0 0 8px 8px;display:flex;align-items:center;justify-content:center;font-size:clamp(9px,1.4cqw,13px);color:var(--accent);letter-spacing:.08em;text-transform:uppercase;pointer-events:none}
-.tile{position:absolute;box-sizing:border-box;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:3px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;user-select:none;-webkit-user-select:none;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.08);overflow:hidden;container-type:size}
+.tile{position:absolute;box-sizing:border-box;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:3px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;user-select:none;-webkit-user-select:none;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.08);overflow:hidden;container-type:size;touch-action:pan-y}
 .tile:hover{border-color:var(--accent)}
 /* Schrift wächst mit dem einzelnen Tisch (cqw = 1 % der Tischbreite) */
 .tile .tn{font-weight:600;font-size:clamp(10px,15.5cqw,18px);line-height:1.1;max-width:100%;white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -251,6 +251,13 @@ textarea{width:100%;max-width:520px;min-height:120px;font-family:var(--mono)}
 .sprech .parts td{white-space:normal;font-size:15px} .sprech .parts td.num{font-size:18px;font-weight:700}
 .sprech ul{padding-left:20px;margin:0}
 .chart{width:100%;max-width:640px;height:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;display:block}
+.charts{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr));margin-top:8px}
+.chartbox{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0}
+.chartbox h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.chartbox .chart{max-width:none;border:0;background:none}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+html.gross .chartbox h4{font-size:13px} html.gross .legend{font-size:13px}
 body.sprechtag .tabs,body.review .tabs,body.sprechtag .tabbar,body.review .tabbar{display:none!important}
 body.sprechtag .course,body.sprechtag .actions,body.sprechtag .menubtn{visibility:hidden}
 .menubtn{display:none;margin-left:auto;min-width:44px;min-height:44px;font-size:22px;line-height:1;position:relative;padding:0 10px}
@@ -272,6 +279,9 @@ body.sprechtag .course,body.sprechtag .actions,body.sprechtag .menubtn{visibilit
 .reviewdock .btns button{flex:1;min-height:48px;font-size:15px}
 .reviewdock .phase{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
 .tile.absent{opacity:.55}
+.tile.sammel{outline:3px dashed var(--warn);outline-offset:-3px}
+tbody tr.sammel th.sticky-col{background:var(--warn-soft)}
+.sammel b{color:var(--warn)}
 .steps{display:flex;flex-direction:column;gap:8px}
 .step{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
 .step .no{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;flex:none}
@@ -438,9 +448,9 @@ html.gross h2{font-size:20px} html.gross h3{font-size:14px}
 
 <dialog id="helpDialog">
   <h2>Bedienung in Kürze</h2>
-  <p><b>Start</b> zeigt offene Stunden, Nachschreiber und die Ampel je Kurs. <b>Unterricht</b> (Mitarbeit): Stempel wählen, Kind antippen; „Sitzplan“ zeigt die Klasse als Tische, „Sitzplan bearbeiten“ lässt Kacheln verschieben. Stunden anlegen mit „+ Stunde“ oder „Stunden nachtragen“; abends über Start durchsehen und abschließen. Stunde nachträglich ändern oder wieder öffnen: Spaltenkopf in der Tabelle antippen. <b>Noten</b>: Tests, Klassenarbeiten, Stand (Ampel), Übersicht (Zeugnisvorschlag, Kindseite). <b>Mehr</b>: Checkliste, Schüler (Kürzel ändern), Einstellungen (Kursname, Gewichte, Stundenplan), Speicher. Rückgängig: Pfeil oben rechts bzw. im Menü.</p>
+  <p><b>Start</b> zeigt offene Stunden, Nachschreiber und die Ampel je Kurs. <b>Unterricht</b> (Mitarbeit): Stempel wählen, Kind antippen, oder auf der Kachel wischen (rechts +, weit ++, links –, weit ––); „Sitzplan“ zeigt die Klasse als Tische, „Sitzplan bearbeiten“ lässt Kacheln verschieben. Stunden anlegen mit „+ Stunde“ oder „Stunden nachtragen“; abends über Start durchsehen und abschließen. Stunde nachträglich ändern oder wieder öffnen: Spaltenkopf in der Tabelle antippen. <b>Noten</b>: Tests, Klassenarbeiten, Stand (Ampel), Übersicht (Zeugnisvorschlag, Kindseite). <b>Mehr</b>: Checkliste, Schüler (Kürzel ändern), Einstellungen (Kursname, Gewichte, Stundenplan), Speicher. Rückgängig: Pfeil oben rechts bzw. im Menü.</p>
   <h2>So rechnet das Notenbuch</h2>
-  <p><b>1. Mitarbeit (Sonstige Leistungen im Unterricht).</b> Jede Spalte ist eine Stunde oder eine andere Leistung (Protokoll, Referat, Heft …). Eine Stunde zählt erst, wenn du sie <b>abgeschlossen</b> hast (Startseite → Offene Stunden). In abgeschlossenen Stunden gilt: Wer keinen Eintrag hat, bekommt die neutrale Note (Standard 3,5). Bei anderen Leistungsarten zählt nur, wer einen Eintrag hat. Stempel: <b>++</b> = 1,0, <b>+</b> = 2,0, <b>○</b> = neutral, <b>–</b> = 5,0, <b>––</b> = 6,0 (einstellbar), <b>F</b> = fehlt, zählt nicht. Jede Leistungsart hat ein Gewicht; gestempelte Stunden können zusätzlich stärker zählen. Die Mitarbeitsnote ist der gewichtete Durchschnitt. Ausgefallene Stunden werden ignoriert.</p>
+  <p><b>1. Mitarbeit (Sonstige Leistungen im Unterricht).</b> Jede Spalte ist eine Stunde oder eine andere Leistung (Protokoll, Referat, Heft …). Eine Stunde zählt erst, wenn du sie <b>abgeschlossen</b> hast (Startseite → Offene Stunden). In abgeschlossenen Stunden gilt: Wer keinen Eintrag hat, bekommt die neutrale Note (Standard 3,5). Bei anderen Leistungsarten zählt nur, wer einen Eintrag hat. Stempel: <b>++</b> = 1,0, <b>+</b> = 2,0, <b>○</b> = neutral, <b>–</b> = 5,0, <b>––</b> = 6,0 (einstellbar), <b>F</b> = fehlt, zählt nicht. Beim Abschließen einer Stunde bekommen alle ohne Eintrag automatisch den Kreis ○: Sie waren da und sind weder positiv noch negativ aufgefallen. Der Kreis zählt als Beobachtung, wiegt aber wie eine Stunde ohne Eintrag und verändert die Note nicht. Jede Leistungsart hat ein Gewicht; gestempelte Stunden können zusätzlich stärker zählen. Als „freiwillig“ gekennzeichnete Arten (z. B. freiwillige Abgaben, Vertiefungsaufgaben) zählen nur, wenn sie die Mitarbeit verbessern, auf Wunsch begrenzt auf eine Höchstverbesserung. Beim zufälligen Einsammeln von Mappen werden nur die eingesammelten Kinder bewertet; wer nicht dran war, bleibt unberührt. Die Mitarbeitsnote ist der gewichtete Durchschnitt. Ausgefallene Stunden werden ignoriert.</p>
   <p><b>2. Tests (schriftliche Übungen).</b> Punkte werden in Prozent umgerechnet und über den Notenschlüssel in eine Note übersetzt. Feinschlüssel = 15‑Punkte‑Tabelle mit Tendenzen (2– = 2,3; 1+ zählt in der Sek I als 1,0), Grobschlüssel = ganze Noten. Für eine einzelne Arbeit kann der Schlüssel um einige Prozentpunkte verschoben werden (Fairness‑Check). Tests zählen mit einstellbarem Anteil (Standard 25 %) zu den Sonstigen Leistungen. Leeres Feld = noch nichts eingetragen. „n. m.“ = nicht mitgeschrieben (entschuldigt oder unentschuldigt, mit Nachschreibtermin); solche Arbeiten zählen nicht mit, das Kind steht auf der Startseite bei den Nachschreibern. Wie eine bis zum Halbjahresende nicht nachgeholte Arbeit in die Note eingeht, entscheidest du; es gibt keine automatische 6. Anhang „n“ = nachgeschrieben, „z“ = Zeitverlängerung, nur als Vermerk.</p>
   <p><b>Stand und Ampel.</b> „Stand“ zeigt die Note nach derselben Regel wie das Zeugnis, aber mit dem, was bis heute vorliegt. Der Pfeil vergleicht mit dem Stand vor 4 Wochen und erscheint erst, wenn der Kurs 4 Wochen alt ist. Der „Verlauf HJ“ in der Übersicht vergleicht die zweite Halbjahreshälfte der Mitarbeit mit der ersten und wird nur gezeigt, wenn in beiden Hälften mindestens drei Beobachtungen vorliegen. Die Ampel ist ein Hinweis: gelb bei Grenzbereich, wenigen Beobachtungen (die Erwartung wächst mit der Zahl der Stunden), hoher Fehlquote oder einer nicht mitgeschriebenen Arbeit; rot bei Note ab 4,5, großem Abstand zwischen Mitarbeit und Klassenarbeiten, deutlich schlechterer Mitarbeit seit 4 Wochen oder zwei nicht mitgeschriebenen Arbeiten. Schwellen unter Einstellungen.</p>
   <p><b>3. Klassenarbeiten</b> (nur in Fächern mit Klassenarbeiten, z. B. WP Naturwissenschaften). Gleiche Umrechnung, eigener Beurteilungsbereich. Nach APO‑SI werden beide Bereiche angemessen berücksichtigt, üblich ist 50 : 50 nach Beschluss der Fachkonferenz. Einstellbar.</p>
@@ -461,13 +471,16 @@ const MARK_CLS = {'++':'pp','+':'p','o':'o','-':'m','--':'mm','F':'f','':'none'}
 const MARK_LABEL = {'++':'++','+':'+','o':'○','-':'–','--':'––','F':'F','':''};
 const SCHEMA = 3;
 const DEF_KINDS = () => [
-  { id: 'stunde', name: 'Stunde', short: '', weight: 1, neutral: true },
-  { id: 'protokoll', name: 'Protokoll', short: 'Prot', weight: 2, neutral: false },
-  { id: 'referat', name: 'Referat', short: 'Ref', weight: 3, neutral: false },
-  { id: 'heft', name: 'Heft/Mappe', short: 'Heft', weight: 2, neutral: false },
-  { id: 'experiment', name: 'Experiment', short: 'Exp', weight: 2, neutral: false },
-  { id: 'hausaufgabe', name: 'Hausaufgabe', short: 'HA', weight: 1, neutral: false }
+  { id: 'stunde', name: 'Stunde', short: '', weight: 1, neutral: true, bonus: false },
+  { id: 'protokoll', name: 'Protokoll', short: 'Prot', weight: 2, neutral: false, bonus: false },
+  { id: 'referat', name: 'Referat', short: 'Ref', weight: 3, neutral: false, bonus: false },
+  { id: 'heft', name: 'Heft/Mappe', short: 'Heft', weight: 2, neutral: false, bonus: false },
+  { id: 'experiment', name: 'Experiment', short: 'Exp', weight: 2, neutral: false, bonus: false },
+  { id: 'hausaufgabe', name: 'Hausaufgabe', short: 'HA', weight: 1, neutral: false, bonus: false },
+  DEF_FREIWILLIG()
 ];
+// Freiwillige Zusatzleistung: zählt nur, wenn sie die Mitarbeit verbessert
+function DEF_FREIWILLIG(){ return { id: 'vertiefung', name: 'Freiwillige Abgabe', short: 'frei', weight: 1, neutral: false, bonus: true }; }
 const DEF_CRIT = () => ['fachlich richtig', 'weiterführende Frage', 'erklärt anderen', 'arbeitet konzentriert', 'Material fehlt', 'Hausaufgabe fehlt', 'Aufgabe verweigert', 'unkonzentriert'];
 const DEF_AMPEL = () => ({ grenz: 0.15, minObs: 6, fehlquote: 25, rotNote: 4.5, rotDiff: 2, rotTrend: 0.5, rotNm: 2 });
 const WD = ['So','Mo','Di','Mi','Do','Fr','Sa'];
@@ -484,7 +497,7 @@ const fmt = (g, d = 2) => g == null ? '–' : g.toFixed(d).replace('.', ',');
 // ---------- Datenmodell ----------
 function defaultSettings(){
   return { hasKA: true, kaWeight: 50, testShare: 25, values: { pp: 1.0, p: 2.0, n: 3.5, m: 5.0, mm: 6.0 }, markedWeight: 1,
-    key: 'fein', fein: [...DEF_FEIN], grob: [...DEF_GROB], minEntries: 6, vornoteWeight: 0, seatCols: 6, boardH: 0, ampel: DEF_AMPEL() };
+    key: 'fein', fein: [...DEF_FEIN], grob: [...DEF_GROB], minEntries: 6, vornoteWeight: 0, seatCols: 6, boardH: 0, autoKreis: true, bonusMax: 0.75, sammelAnzahl: 5, ampel: DEF_AMPEL() };
 }
 function newCourse(name, fach = '', halbjahr = ''){
   return { id: uid(), schema: SCHEMA, name, fach, halbjahr, created: Date.now(), updated: Date.now(), synced: false, archived: false, archivedAt: null,
@@ -517,6 +530,9 @@ function migrate(c){
   if (old && c.settings.minEntries === 5) c.settings.minEntries = 6;
   if (!Array.isArray(c.kinds) || !c.kinds.length) c.kinds = DEF_KINDS();
   if (!c.kinds.find(k => k.id === 'stunde')) c.kinds.unshift(DEF_KINDS()[0]);
+  c.kinds.forEach(k => { k.bonus = !!k.bonus; });
+  if (!c.kindsV2) { if (!c.kinds.some(k => k.bonus)) c.kinds.push(DEF_FREIWILLIG()); c.kindsV2 = true; } // einmalig ergänzt
+  if (!c.bonusV2) { if (!(+c.settings.bonusMax > 0)) c.settings.bonusMax = 0.75; c.bonusV2 = true; } // Deckel einmalig auf 0,75 setzen
   if (!Array.isArray(c.criteria)) c.criteria = DEF_CRIT();
   c.schedule ||= []; c.students ||= []; c.lessons ||= []; c.marks ||= {}; c.reasons ||= {}; c.tests ||= []; c.klassenarbeiten ||= [];
   c.checklist = Object.assign({ nachschreiberOk: false, spiegelSeen: false }, c.checklist || {});
@@ -545,6 +561,14 @@ function pruneStamps(c){
   for (const t of [...(c.tests || []), ...(c.klassenarbeiten || [])]) for (const k of Object.keys(t.ru || {})) if (t.ru[k] < cut) delete t.ru[k];
 }
 function touchMark(c, sid, lid){ (c.mu ||= {})[sid + '|' + lid] = Date.now(); }
+// Beim Abschließen: alle ohne Eintrag bekommen den Kreis („war da, nichts aufgefallen“). Nur in Unterrichtsstunden, nicht bei Ausfall.
+function neutralFuellen(c, l){
+  if (!l || l.ausfall || !(c.settings.autoKreis !== false)) return 0;
+  const k = kindOf(c, l); if (!k.neutral) return 0;
+  let n = 0;
+  for (const st of c.students) { const cur = (c.marks[st.id] || {})[l.id]; if (!cur) { (c.marks[st.id] ||= {})[l.id] = 'o'; touchMark(c, st.id, l.id); n++; } }
+  return n;
+}
 function touchResult(it, sid){ (it.ru ||= {})[sid] = Date.now(); }
 function tomb(c, kind, id){ ((c.del ||= {})[kind] ||= {})[id] = Date.now(); }
 
@@ -568,9 +592,8 @@ const isClosed = l => l.status === 'abgeschlossen' && !l.ausfall;
 function closedLessons(c, until){ return c.lessons.filter(l => isClosed(l) && (!until || l.date <= until)); }
 function openLessons(c){ return c.lessons.filter(l => l.status !== 'abgeschlossen' && !l.ausfall).sort((a, b) => a.date.localeCompare(b.date)); }
 
-function mitarbeit(c, sid, opts = {}){
+function mitarbeitRoh(c, sid, lessons){
   const s = c.settings, v = s.values, w = Math.max(0.1, +s.markedWeight || 1);
-  const lessons = opts.lessons || closedLessons(c, opts.until);
   let sum = 0, wsum = 0, n = 0, entries = 0, last = null, total = 0; const cnt = { pp: 0, p: 0, o: 0, m: 0, mm: 0, f: 0 }; const perKind = {};
   const row = c.marks[sid] || {};
   for (const l of lessons) {
@@ -579,11 +602,32 @@ function mitarbeit(c, sid, opts = {}){
     if (m === 'F') { cnt.f++; continue; }
     let val, wt;
     if (!m) { if (!kind.neutral) continue; val = v.n; wt = kind.weight || 1; }
-    else { val = markValue(v, m); wt = (kind.weight || 1) * w; cnt[MARK_CLS[m]]++; entries++; if (!last || l.date > last) last = l.date;
+    // Der ausdrückliche Kreis zählt als Beobachtung, wiegt aber wie eine unauffällige Stunde (nicht wie ein auffälliger Stempel)
+    else { val = markValue(v, m); wt = (kind.weight || 1) * (m === 'o' ? 1 : w); cnt[MARK_CLS[m]]++; entries++; if (!last || l.date > last) last = l.date;
       const pk = (perKind[kind.id] ||= { name: kind.name, pp: 0, p: 0, o: 0, m: 0, mm: 0 }); pk[MARK_CLS[m]]++; }
     n++; sum += val * wt; wsum += wt;
   }
   return { note: n ? clamp(sum / wsum) : null, n, entries, last, cnt, perKind, total, fehlquote: total ? 100 * cnt.f / total : 0 };
+}
+// Freiwillige Leistungsarten dürfen die Mitarbeit nur verbessern, höchstens um settings.bonusMax Noten (0 = unbegrenzt)
+function mitarbeit(c, sid, opts = {}){
+  const lessons = opts.lessons || closedLessons(c, opts.until);
+  const frei = new Set(c.kinds.filter(k => k.bonus).map(k => k.id));
+  const mitFrei = mitarbeitRoh(c, sid, lessons);
+  if (!frei.size) return Object.assign(mitFrei, { roh: mitFrei.note, bonus: 0, freiwillig: 0 });
+  const ohne = mitarbeitRoh(c, sid, lessons.filter(l => !frei.has(l.kind || 'stunde')));
+  const freiwillig = Object.entries(mitFrei.perKind).filter(([id]) => frei.has(id)).reduce((s, [, k]) => s + k.pp + k.p + k.o + k.m + k.mm, 0);
+  let note = ohne.note;
+  if (note == null) note = mitFrei.note;
+  else if (mitFrei.note != null && mitFrei.note < note) { const cap = +c.settings.bonusMax || 0; note = cap > 0 ? Math.max(mitFrei.note, note - cap) : mitFrei.note; }
+  // Zählwerte aus allen Spalten (freiwillige Abgaben sind auch Beobachtungen), die Note wird nur verbessert
+  return Object.assign(mitFrei, { note: note == null ? null : clamp(note), roh: ohne.note, bonus: ohne.note != null && note != null ? +(ohne.note - note).toFixed(2) : 0, freiwillig });
+}
+// Zufällig einsammeln: bevorzugt Kinder, die bei dieser Leistungsart bisher am seltensten dran waren
+function zufallsAuswahl(c, kindId, n, rnd = Math.random){
+  const lids = new Set(c.lessons.filter(l => (l.kind || 'stunde') === kindId).map(l => l.id));
+  const zahl = st => Object.keys(c.marks[st.id] || {}).filter(lid => lids.has(lid)).length;
+  return [...c.students].map(st => ({ st, k: zahl(st), r: rnd() })).sort((a, b) => a.k - b.k || a.r - b.r).slice(0, Math.max(0, n)).map(x => x.st);
 }
 function trend(c, sid){
   const ls = closedLessons(c).filter(l => (l.kind || 'stunde') === 'stunde').sort((a, b) => a.date.localeCompare(b.date));
@@ -680,6 +724,37 @@ function verlauf(c, st, step = 7){
   for (let d = new Date(ls[0] + 'T12:00:00'); d <= end; d.setDate(d.getDate() + step)) { const iso = isoDate(d); const g = gesamt(c, st, { until: iso }); if (g.basis != null) out.push({ date: iso, note: g.basis }); }
   const last = gesamt(c, st); if (last.basis != null && (!out.length || out[out.length - 1].date !== today())) out.push({ date: today(), note: last.basis });
   return out;
+}
+
+// Gleitender Mitarbeits-Durchschnitt über die letzten `fenster` Stunden
+function mitarbeitReihe(c, sid, fenster = 5){
+  const ls = closedLessons(c).filter(l => (l.kind || 'stunde') === 'stunde').sort((a, b) => a.date.localeCompare(b.date));
+  const out = [];
+  for (let i = 0; i < ls.length; i++) { const w = ls.slice(Math.max(0, i - fenster + 1), i + 1); const m = mitarbeit(c, sid, { lessons: w }); if (m.note != null) out.push({ date: ls[i].date, note: m.note }); }
+  return out;
+}
+function mitarbeitReiheKurs(c, fenster = 5){
+  if (!c.students.length) return [];
+  const per = c.students.map(st => mitarbeitReihe(c, st.id, fenster)); const n = Math.max(0, ...per.map(p => p.length)); const out = [];
+  for (let i = 0; i < n; i++) { const vals = per.map(p => p[i]).filter(Boolean); if (!vals.length) continue; out.push({ date: vals[0].date, note: vals.reduce((s, v) => s + v.note, 0) / vals.length }); }
+  return out;
+}
+function verlaufKurs(c, step = 7){
+  const dates = verlauf(c, c.students[0] || { id: 'x' }, step).map(p => p.date); const out = [];
+  for (const d of dates) { const vals = c.students.map(st => gesamt(c, st, { until: d }).basis).filter(v => v != null); if (vals.length) out.push({ date: d, note: vals.reduce((a, b) => a + b, 0) / vals.length }); }
+  return out;
+}
+function kursMittel(c){ const vals = c.students.map(st => gesamt(c, st).basis).filter(v => v != null); return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null; }
+// Wie viele Daten liegen dem Kind zugrunde?
+function datenbasis(c, st){
+  const m = mitarbeit(c, st.id); const gezaehlt = r => r && r.s === 'p';
+  const tests = c.tests.filter(it => gezaehlt(getResult(it, st.id))).length;
+  const ka = (c.settings.hasKA ? c.klassenarbeiten : []).filter(it => gezaehlt(getResult(it, st.id))).length;
+  const tage = m.last ? Math.round((new Date(today() + 'T12:00:00') - new Date(m.last + 'T12:00:00')) / 864e5) : null;
+  const sonstige = Object.values(m.perKind).filter(k => k.name !== 'Stunde').reduce((s, k) => s + k.pp + k.p + k.o + k.m + k.mm, 0);
+  return { stempel: m.entries, stunden: m.n, total: m.total, fehl: m.cnt.f, fehlquote: m.fehlquote, tests, ka, sonstige,
+    punkte: m.entries + tests + ka, positiv: m.cnt.pp + m.cnt.p, negativ: m.cnt.m + m.cnt.mm, neutral: m.cnt.o,
+    letzte: m.last, tage, dichte: m.total ? m.entries / m.total : 0, cnt: m.cnt, perKind: m.perKind };
 }
 
 // ---------- Nachschreiber, offene Stunden, Checkliste ----------
@@ -878,14 +953,15 @@ return { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS,
   uid, clamp, num, isoDate, today, daysAgo, clone, fmt, defaultSettings, newCourse, newPlan, newStudent, newLesson, newItem, parseResultText, migrateResult, migrate,
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, kursAlterTage, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow, anteile,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, touchMark, touchResult, tomb, pruneStamps, sampleCourse,
-  DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs };
+  DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs,
+  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG };
 })();
 </script>
 
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'Version 15';
+const APP_VERSION = 'Version 19';
 const KEY = 'notenbuch-sek1-v2';
 const KEY_OLD = 'notenbuch-sek1-v1';
 const STORE_KEY = 'notenbuch-storage-v1';
@@ -893,7 +969,8 @@ const { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS, 
   uid, clamp, num, isoDate, today, daysAgo, clone, fmt, defaultSettings, newCourse, newPlan, newStudent, newLesson, newItem, parseResultText, migrateResult, migrate,
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, kursAlterTage, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow, anteile,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, touchMark, touchResult, tomb, pruneStamps, sampleCourse,
-  DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs } = window.NB;
+  DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs,
+  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG } = window.NB;
 const DEFAULT_DBX_KEY = ''; // Hier kann ein fester Dropbox-App-Key eingetragen werden, dann entfällt die Eingabe für alle Geräte
 const isStandalone = () => window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
 const $ = (s, r = document) => r.querySelector(s);
@@ -1182,10 +1259,17 @@ function lessonEditor(c){
     <label>Thema (optional)<input type="text" id="lessonTopic" value="${esc(el.topic || '')}" placeholder="z. B. Dichte messen"></label>
     <label class="check" style="margin:0"><input type="checkbox" id="lessonAusfall" ${el.ausfall ? 'checked' : ''}> Ausfall (zählt nicht)</label>
     <button class="${closed ? '' : 'primary'}" id="btnLessonStatus">${closed ? 'Wieder öffnen' : 'Stunde abschließen'}</button>
+    ${kindOf(c, el).id !== 'stunde' && !kindOf(c, el).neutral ? `<button id="btnSammeln" title="Wählt Kinder aus, die bei dieser Leistungsart bisher am seltensten dran waren">🎲 Zufällig einsammeln (${c.settings.sammelAnzahl || 5})</button>` : ''}
     <button class="danger" id="btnDeleteLesson">Spalte löschen</button>
     <button id="btnCloseLesson">Fertig</button>
-    <span class="wide flag">${closed ? 'Abgeschlossen: Diese Stunde zählt für die Noten.' : 'Offen: Diese Stunde zählt noch nicht. Nach dem Durchsehen abschließen.'}</span>
+    <span class="wide flag">${closed ? 'Abgeschlossen: Diese Stunde zählt für die Noten.' : kindOf(c, el).neutral ? 'Offen: Diese Stunde zählt noch nicht. Nach dem Durchsehen abschließen.' : 'Offen. Nur Kinder mit Eintrag werden hier gewertet, alle anderen bleiben unberührt.'}</span>
+    ${sammelHtml(c, el)}
   </div>`;
+}
+function sammelHtml(c, l){
+  const s = state.sammel; if (!s || s.cid !== c.id || s.lid !== l.id || !s.ids.length) return '';
+  const names = s.ids.map(id => c.students.find(x => x.id === id)).filter(Boolean).map(st => `<button class="small" data-focus="${st.id}">${esc(st.name)}</button>`).join(' ');
+  return `<div class="wide sammel"><b>Heute einsammeln:</b> ${names} <button class="small" id="btnSammelnWeg" title="Auswahl ausblenden">✕</button></div>`;
 }
 function addBar(c){
   const miss = missingScheduleDates(c);
@@ -1204,7 +1288,8 @@ function renderMitarbeit(c){
   const rows = c.students.map((st, r) => {
     const row = c.marks[st.id] || {}, rs = c.reasons[st.id] || {};
     const cells = c.lessons.map((l, ci) => { const m = row[l.id] || ''; return `<td class="cell m-${MARK_CLS[m]} ${rs[l.id] ? 'hasreason' : ''} ${l.ausfall ? 'ausfall' : ''} ${l.status !== 'abgeschlossen' ? 'offen' : ''}" tabindex="0" data-sid="${st.id}" data-lid="${l.id}" data-r="${r}" data-c="${ci}" title="${esc(rs[l.id] || '')}">${MARK_LABEL[m]}</td>`; }).join('');
-    return `<tr id="row-${st.id}" class="${focus.has(st.id) ? 'focus' : ''}"><th class="sticky-col" title="${esc(st.name)}">${esc(st.name)}</th>${cells}<td class="sum" data-sum="${st.id}">${sumCell(c, st.id)}</td></tr>`;
+    const sm = state.sammel && state.sammel.cid === c.id && state.sammel.lid === state.editLesson && state.sammel.ids.includes(st.id);
+    return `<tr id="row-${st.id}" class="${focus.has(st.id) ? 'focus' : ''} ${sm ? 'sammel' : ''}"><th class="sticky-col" title="${esc(st.name)}">${sm ? '🎲 ' : ''}${esc(st.name)}</th>${cells}<td class="sum" data-sum="${st.id}">${sumCell(c, st.id)}</td></tr>`;
   }).join('');
   const table = !c.students.length ? `<div class="empty">Noch keine Schüler im Kurs. Trage sie unter „Schüler“ ein.</div>`
     : !c.lessons.length ? `<div class="empty">Noch keine Stunden. Tippe auf „+ Stunde“ oder hinterlege in den Einstellungen deinen Stundenplan.</div>`
@@ -1248,8 +1333,9 @@ function boardHtml(c, l, edit, absentMode){
   const focus = new Set(focusStudents(c).map(s => s.id)); const plan = currentPlan(c, l);
   const W = boardW(plan), H = boardHeight(c, plan); const tw = tileW(plan), thU = tileH(plan);
   const pw = v => (v / W * 100).toFixed(3), ph = v => (v / H * 100).toFixed(3);
+  const sammel = new Set(state.sammel && state.sammel.cid === c.id && l && state.sammel.lid === l.id ? state.sammel.ids : []);
   const tiles = seatOrder(c).map((st, i) => { const m = l ? ((c.marks[st.id] || {})[l.id] || '') : ''; const r = l ? ((c.reasons[st.id] || {})[l.id] || '') : ''; const g = mitarbeit(c, st.id).note; const p = toDisplay(plan.pos[st.id] || defaultPos(c, i, plan), W, H, tw, thU); const ar = arrow(tendenz4(c, st).delta);
-    return `<div class="tile m-${MARK_CLS[m]} ${focus.has(st.id) ? 'focus' : ''} ${r ? 'hasreason' : ''} ${m === 'F' ? 'absent' : ''}" data-tile="${st.id}" title="${esc(st.name)}${r ? ' – ' + esc(r) : ''} · ${esc(ar.text)}" style="left:${pw(p.x)}%;top:${ph(p.y)}%;width:${pw(tw)}%;height:${ph(thU)}%"><span class="tn">${esc(st.name)} <span class="trend ${ar.cls}">${ar.sym}</span></span><span class="tm">${absentMode ? (m === 'F' ? 'F' : '') : MARK_LABEL[m]}</span><span class="tg">${absentMode ? (m === 'F' ? 'fehlt' : 'da') : fmt(g, 1)}</span></div>`; }).join('');
+    return `<div class="tile m-${MARK_CLS[m]} ${focus.has(st.id) ? 'focus' : ''} ${sammel.has(st.id) ? 'sammel' : ''} ${r ? 'hasreason' : ''} ${m === 'F' ? 'absent' : ''}" data-tile="${st.id}" title="${esc(st.name)}${r ? ' – ' + esc(r) : ''} · ${esc(ar.text)}" style="left:${pw(p.x)}%;top:${ph(p.y)}%;width:${pw(tw)}%;height:${ph(thU)}%"><span class="tn">${esc(st.name)} <span class="trend ${ar.cls}">${ar.sym}</span></span><span class="tm">${absentMode ? (m === 'F' ? 'F' : '') : MARK_LABEL[m]}</span><span class="tg">${absentMode ? (m === 'F' ? 'fehlt' : 'da') : fmt(g, 1)}</span></div>`; }).join('');
   const grid = edit ? `background-size:${(500 / W).toFixed(3)}% ${(500 / H).toFixed(3)}%;` : '';
   return `<div class="boardwrap" id="boardwrap"><div class="board ${edit ? 'edit' : ''} ${teacherView() ? 'lehrer' : ''}" id="board" data-plan="${plan.id}" data-tw="${tw}" data-th="${thU}" data-bw="${W}" style="width:${(boardZoom() * W).toFixed(0)}%;aspect-ratio:${W}/${H};${grid}"><div class="tafel">${teacherView() ? 'Tafel · hier stehst du' : 'Tafel'}${c.plans.length > 1 ? ' · ' + esc(plan.name) : ''}</div>${tiles}</div></div>`;
 }
@@ -1260,7 +1346,7 @@ function renderKacheln(c){
   return `<section class="pane">
     <div class="toolbar">${stampBar()}<div class="spacer"></div>${viewToggle()}${micButton()}${addBar(c)}</div>
     <div class="toolbar"><label>Spalte ${sel}</label>${planBar(c, l, state.seatEdit)}${l && l.status !== 'abgeschlossen' ? `<button class="small primary" data-review-lesson="${c.id}:${l.id}">Diese Stunde durchsehen und abschließen</button>` : ''}${focusBar(c)}<div class="spacer"></div>${zoomBar()}<button class="small toggle ${state.seatEdit ? 'on' : ''}" id="btnSeatEdit">${state.seatEdit ? 'Sitzplan fertig' : 'Sitzplan bearbeiten'}</button>${editTools}</div>
-    ${state.seatEdit ? '<p class="hint">Kacheln mit Maus oder Finger dorthin ziehen, wo die Tische stehen. Blick vom Pult: Du stehst unten an der Tafel und schaust in die Klasse. Mehrere Sitzpläne (z. B. Kursraum und Klassenraum) legst du mit „+ Sitzplan“ an; im Stundenplan unter Einstellungen kannst du je Wochentag den passenden Plan wählen. <span class="desk">Leere Fläche ziehen verschiebt, Strg + Mausrad zoomt.</span> „Raum breiter“ und „Höhe“ vergrößern den Raum, „Tische“ ändert die Tischgröße. Für 4 + Gang + 4: Raum breiter machen, dann die Tische mit Lücke in der Mitte anordnen.</p>' : '<p class="hint">Stempel wählen, Kachel antippen. Nochmal antippen löscht. Stempel zählen zur Stunde, egal in welchem Sitzplan du sie setzt. Pfeil: ↑ besser, → gleich, ↓ schlechter als vor 4 Wochen. Farbiger Rahmen: am längsten ohne Eintrag.</p>'}
+    ${state.seatEdit ? '<p class="hint">Kacheln mit Maus oder Finger dorthin ziehen, wo die Tische stehen. Blick vom Pult: Du stehst unten an der Tafel und schaust in die Klasse. Mehrere Sitzpläne (z. B. Kursraum und Klassenraum) legst du mit „+ Sitzplan“ an; im Stundenplan unter Einstellungen kannst du je Wochentag den passenden Plan wählen. <span class="desk">Leere Fläche ziehen verschiebt, Strg + Mausrad zoomt.</span> „Raum breiter“ und „Höhe“ vergrößern den Raum, „Tische“ ändert die Tischgröße. Für 4 + Gang + 4: Raum breiter machen, dann die Tische mit Lücke in der Mitte anordnen.</p>' : '<p class="hint">Stempel wählen, Kachel antippen. Nochmal antippen löscht. Schneller geht es mit Wischen: nach rechts <b>+</b> (weit gewischt <b>++</b>), nach links <b>–</b> (weit gewischt <b>––</b>). Beim Abschließen bekommen alle ohne Eintrag automatisch den Kreis ○. Stempel zählen zur Stunde, egal in welchem Sitzplan du sie setzt. Pfeil: ↑ besser, → gleich, ↓ schlechter als vor 4 Wochen. Farbiger Rahmen: am längsten ohne Eintrag.</p>'}
     ${lessonEditor(c)}
     ${!c.students.length ? '<div class="empty">Noch keine Schüler im Kurs.</div>' : !l ? '<div class="empty">Noch keine Stunde. Tippe auf „+ Stunde“.</div>' : boardHtml(c, l, state.seatEdit)}
   </section>`;
@@ -1274,7 +1360,7 @@ function renderReview(c){
     <div class="toolbar"><button id="btnReviewBack" data-ro="1">← Zurück</button><h2>${phase === 1 ? 'Schritt 1: Wer hat gefehlt?' : 'Schritt 2: Wer ist aufgefallen?'}</h2><span class="flag">${pos >= 0 ? `${pos + 1} von ${all.length} offenen` : 'bereits abgeschlossen'}</span></div>
     <div class="banner info"><b>${esc(c.name)}</b> · ${longDate(l.date)}${l.topic ? ' · ' + esc(l.topic) : ''}${kindOf(c, l).id !== 'stunde' ? ' · ' + esc(kindOf(c, l).name) : ''}</div>
     <div class="toolbar">${planBar(c, l, false)}<div class="spacer"></div>${zoomBar()}${phase === 2 ? micButton() : ''}</div>
-    <p class="hint">${phase === 1 ? 'Tippe auf jedes Kind, das gefehlt hat. Dann „Weiter“.' : `Stempel wählen, Kind antippen. Alle ohne Eintrag zählen nach dem Abschließen als „nichts aufgefallen“ (${fmt(c.settings.values.n, 1)}).`}</p>
+    <p class="hint">${phase === 1 ? 'Tippe auf jedes Kind, das gefehlt hat. Dann „Weiter“.' : `Stempel wählen und Kind antippen, oder auf der Kachel wischen: rechts <b>+</b> (weit <b>++</b>), links <b>–</b> (weit <b>––</b>). Alle ohne Eintrag bekommen beim Abschließen den Kreis ○ und zählen als „nichts aufgefallen“ (${fmt(c.settings.values.n, 1)}).`}</p>
     ${c.students.length ? boardHtml(c, l, false, phase === 1) : '<div class="empty">Keine Schüler im Kurs.</div>'}
     <div class="reviewdock">
       <div class="phase"><span>${phase === 1 ? `${absent} ${absent === 1 ? 'Kind fehlt' : 'Kinder fehlen'}` : `${absent} abwesend · Stempel für die Anwesenden`}</span><button class="small" id="btnUndoDock" title="Rückgängig">↶</button></div>
@@ -1456,6 +1542,7 @@ function detailText(c, st, g){
     t += `${st.name} ${lvl} (${pos} positive, ${neg} negative Einträge bei ${m.n} bewerteten Stunden, Mitarbeit ${fmt(m.note)}).`;
     const kinds = Object.values(m.perKind).filter(k => k.name !== 'Stunde'); if (kinds.length) t += ' Weitere Leistungen: ' + kinds.map(k => `${k.name} ${['pp','p','o','m','mm'].filter(x => k[x]).map(x => k[x] + '× ' + MARK_LABEL[{pp:'++',p:'+',o:'o',m:'-',mm:'--'}[x]]).join(', ')}`).join('; ') + '.';
     if (g.tr) t += g.tr.delta <= -0.2 ? ' Im Verlauf des Halbjahres hat sich die Mitarbeit deutlich verbessert.' : g.tr.delta >= 0.2 ? ' Im Verlauf des Halbjahres hat die Mitarbeit nachgelassen.' : ' Die Mitarbeit ist über das Halbjahr stabil.';
+    if (m.freiwillig) t += m.bonus > 0 ? ` ${st.name} hat ${m.freiwillig} freiwillige Zusatzleistung${m.freiwillig === 1 ? '' : 'en'} abgegeben und die Mitarbeitsnote damit von ${fmt(m.roh, 1)} auf ${fmt(m.note, 1)} verbessert.` : ` ${st.name} hat ${m.freiwillig} freiwillige Zusatzleistung${m.freiwillig === 1 ? '' : 'en'} abgegeben.`;
     if (m.cnt.f) t += ` Gefehlt in ${m.cnt.f} von ${m.total} Stunden.`;
   } else t += `${st.name}: noch keine abgeschlossenen Stunden.`;
   const top = reasonCounts(c, st.id).slice(0, 3); if (top.length) t += ' Häufigste Kriterien: ' + top.map(([r, n]) => `${r} (${n})`).join(', ') + '.';
@@ -1499,7 +1586,9 @@ function renderDetail(c, st){
       <div><b>${st.override ?? '–'}</b><span>Zeugnisnote (manuell)</span></div>
       <div><b><span class="trend ${ar.cls}">${ar.sym}</span></b><span>${ar.text}</span></div>
       <div><b>${g.ma.cnt.f}</b><span>Fehlstunden von ${g.ma.total}</span></div>
+      ${g.ma.freiwillig ? `<div><b>${g.ma.bonus > 0 ? '−' + fmt(g.ma.bonus, 1) : '±0'}</b><span>durch ${g.ma.freiwillig} freiwillige Abgabe${g.ma.freiwillig === 1 ? '' : 'n'}${g.ma.bonus > 0 ? ' (von ' + fmt(g.ma.roh, 1) + ')' : ', ohne Wirkung'}</span></div>` : ''}
     </div>
+    ${renderEntwicklung(c, st, g)}
     ${c.settings.hasKA ? (() => { const ziel = state.ziel || Math.max(1, Math.min(5, g.vorschlag || 3)); const b = benoetigt(c, st, ziel); return `<div class="rechner no-print"><b>Was braucht ${esc(st.name)} in der nächsten Klassenarbeit</b> für eine <select data-ziel="1">${[1,2,3,4,5].map(n => `<option value="${n}" ${n === ziel ? 'selected' : ''}>${n}</option>`).join('')}</select> auf dem Zeugnis? <span class="flag">${!b.moeglich ? 'Auch mit einer 1,0 nicht mehr erreichbar.' : b.sicher ? 'Schon jetzt sicher, unabhängig von der nächsten Arbeit.' : `Mindestens eine ${fmt(b.note, 1)}, das sind etwa ${fmt(b.punkte, b.punkte % 1 ? 1 : 0)} von ${b.max} Punkten.`}</span></div>`; })() : ''}
     <h3>Nachteilsausgleich</h3>
     <div class="na"><label class="check" style="margin:0"><input type="checkbox" data-na="zeit" ${st.na && st.na.zeit ? 'checked' : ''}> Zeitverlängerung</label><label class="check" style="margin:0"><input type="checkbox" data-na="rs" ${st.na && st.na.rs ? 'checked' : ''}> Rechtschreibung nicht gewertet</label><input type="text" data-na="text" value="${esc(st.na ? st.na.text : '')}" placeholder="weitere Regelung" style="flex:1;min-width:160px"></div>
@@ -1517,14 +1606,77 @@ function renderDetail(c, st){
   </section>`;
 }
 // --- Sprechtag ---
-function verlaufSvg(pts){
-  if (pts.length < 2) return '<p class="flag">Noch zu wenige Daten für einen Verlauf.</p>';
-  const W = 600, Hh = 200, pad = 28; const x = i => pad + i * (W - 2 * pad) / (pts.length - 1); const y = n => pad + (n - 1) * (Hh - 2 * pad) / 5;
-  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.note).toFixed(1)}`).join(' ');
-  const grid = [1,2,3,4,5,6].map(n => `<line x1="${pad}" x2="${W - pad}" y1="${y(n)}" y2="${y(n)}" stroke="var(--line)" stroke-width="1"/><text x="${pad - 6}" y="${y(n) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${n}</text>`).join('');
-  const labels = [0, Math.floor((pts.length - 1) / 2), pts.length - 1].filter((v, i, a) => a.indexOf(v) === i).map(i => `<text x="${x(i)}" y="${Hh - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">${shortDate(pts[i].date)}</text>`).join('');
-  const last = pts[pts.length - 1];
-  return `<svg viewBox="0 0 ${W} ${Hh}" class="chart" role="img" aria-label="Notenverlauf">${grid}<path d="${path}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round"/>${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.note)}" r="3.5" fill="var(--accent)"/>`).join('')}<circle cx="${x(pts.length - 1)}" cy="${y(last.note)}" r="6" fill="var(--accent)"/><text x="${x(pts.length - 1) - 10}" y="${y(last.note) - 10}" text-anchor="end" font-size="13" font-weight="700" fill="var(--text)">${fmt(last.note, 1)}</text>${labels}</svg>`;
+// Notendiagramm über die Zeit: mehrere Linien oder Punktreihen, Note 1 oben, 6 unten
+function noteChart(series, opts = {}){
+  const S = (series || []).filter(s => s.pts && s.pts.length);
+  if (!S.length || S.every(s => s.pts.length < 2 && !s.dots)) return '<p class="flag">Noch zu wenige Daten für ein Diagramm.</p>';
+  const ms = d => new Date(d + 'T12:00:00').getTime();
+  const all = S.flatMap(s => s.pts); const t0 = Math.min(...all.map(p => ms(p.date))), t1 = Math.max(...all.map(p => ms(p.date)));
+  const W = 640, H = opts.h || 200, L = 30, R = 14, T = 10, B = 26;
+  const x = d => t1 === t0 ? L + (W - L - R) / 2 : L + (ms(d) - t0) / (t1 - t0) * (W - L - R);
+  const y = n => T + (Math.min(6, Math.max(1, n)) - 1) / 5 * (H - T - B);
+  const grid = [1,2,3,4,5,6].map(n => `<line x1="${L}" x2="${W - R}" y1="${y(n).toFixed(1)}" y2="${y(n).toFixed(1)}" stroke="var(--line)" stroke-width="1"/><text x="${L - 6}" y="${(y(n) + 4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--muted)">${n}</text>`).join('');
+  const dateSet = [...new Set(all.map(p => p.date))].sort();
+  const marks = [dateSet[0], dateSet[Math.floor((dateSet.length - 1) / 2)], dateSet[dateSet.length - 1]].filter((v, i, a) => v && a.indexOf(v) === i);
+  const labels = marks.map(d => `<text x="${x(d).toFixed(1)}" y="${H - 6}" text-anchor="${d === marks[0] ? 'start' : d === marks[marks.length - 1] ? 'end' : 'middle'}" font-size="11" fill="var(--muted)">${shortDate(d)}</text>`).join('');
+  const body = S.map(s => {
+    const col = s.color || 'var(--accent)'; const pts = [...s.pts].sort((a, b) => a.date.localeCompare(b.date));
+    const path = s.dots || pts.length < 2 ? '' : `<path d="${pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.date).toFixed(1)},${y(p.note).toFixed(1)}`).join(' ')}" fill="none" stroke="${col}" stroke-width="${s.thin ? 2 : 3}" stroke-linejoin="round" stroke-linecap="round" ${s.dash ? 'stroke-dasharray="6 5"' : ''}/>`;
+    const dots = pts.map(p => `<circle cx="${x(p.date).toFixed(1)}" cy="${y(p.note).toFixed(1)}" r="${s.dots ? 5 : 3}" fill="${col}"><title>${shortDate(p.date)}: ${fmt(p.note, 1)}${p.label ? ' · ' + esc(p.label) : ''}</title></circle>`).join('');
+    const last = pts[pts.length - 1];
+    const tag = s.label === false || s.dots ? '' : `<text x="${(x(last.date) - 6).toFixed(1)}" y="${(y(last.note) - 9).toFixed(1)}" text-anchor="end" font-size="13" font-weight="700" fill="${col}">${fmt(last.note, 1)}</text>`;
+    return path + dots + tag;
+  }).join('');
+  const legend = S.length > 1 ? `<div class="legend">${S.map(s => `<span><i style="background:${s.color || 'var(--accent)'}"></i>${esc(s.name || '')}</span>`).join('')}</div>` : '';
+  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="${esc(opts.alt || 'Notenverlauf')}">${grid}${body}${labels}</svg>${legend}`;
+}
+const verlaufSvg = pts => noteChart([{ name: 'Stand', pts }]);
+// Waagerechte Balken für Zählungen
+function barChart(items, opts = {}){
+  const list = (items || []).filter(i => i.value > 0); if (!list.length) return `<p class="flag">${opts.leer || 'Noch nichts erfasst.'}</p>`;
+  const max = Math.max(...list.map(i => i.value)); const rowH = 26, W = 640, L = opts.labelW || 120, R = 40, H = list.length * rowH + 6;
+  const rows = list.map((it, i) => { const w = (W - L - R) * it.value / max; const yy = i * rowH + 4;
+    return `<text x="${L - 8}" y="${yy + 15}" text-anchor="end" font-size="12" fill="var(--text)">${esc(it.label)}</text><rect x="${L}" y="${yy + 3}" width="${Math.max(2, w).toFixed(1)}" height="15" rx="4" fill="${it.color || 'var(--accent)'}"/><text x="${(L + Math.max(2, w) + 6).toFixed(1)}" y="${yy + 15}" font-size="12" font-weight="700" fill="var(--muted)">${it.value}${opts.suffix || ''}</text>`; }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="${esc(opts.alt || 'Verteilung')}">${rows}</svg>`;
+}
+function renderEntwicklung(c, st, g){
+  const d = datenbasis(c, st); const mittel = kursMittel(c);
+  const kv = [
+    [d.punkte, 'Datenpunkte insgesamt'],
+    [d.stempel, `Stempel in ${d.total} Stunden`],
+    [`${d.positiv} / ${d.negativ}`, 'positiv / negativ'],
+    [d.neutral || 0, 'ausdrücklich neutral'],
+    [`${d.tests} / ${d.ka}`, 'Tests / Klassenarbeiten'],
+    [d.fehl, `Fehlstunden (${Math.round(d.fehlquote)} %)`],
+    [d.tage == null ? '–' : d.tage === 0 ? 'heute' : `vor ${d.tage} T.`, 'letzte Beobachtung'],
+    [fmt(d.dichte, 1), 'Stempel je Stunde'],
+    [mittel == null || g.basis == null ? '–' : (g.basis - mittel > 0 ? '+' : '') + fmt(g.basis - mittel, 1), 'Abstand zum Kursschnitt']
+  ];
+  const arbeitenPts = [...c.tests.map(it => ({ it, art: 'Test' })), ...(c.settings.hasKA ? c.klassenarbeiten.map(it => ({ it, art: 'Klassenarbeit' })) : [])]
+    .map(({ it, art }) => { const n = einzelNote(c, it, st.id); return n == null ? null : { date: it.date, note: n, label: `${art}: ${it.name}` }; }).filter(Boolean);
+  const stempelItems = [
+    { label: '++ sehr gut', value: d.cnt.pp, color: 'var(--pp)' }, { label: '+ gut', value: d.cnt.p, color: 'var(--p)' },
+    { label: '○ neutral', value: d.cnt.o, color: 'var(--o)' }, { label: '– schwach', value: d.cnt.m, color: 'var(--m)' },
+    { label: '–– sehr schwach', value: d.cnt.mm, color: 'var(--mm)' }, { label: 'F gefehlt', value: d.cnt.f, color: 'var(--f)' }
+  ];
+  const kinds = Object.values(d.perKind).filter(k => k.name !== 'Stunde').map(k => ({ label: k.name, value: k.pp + k.p + k.o + k.m + k.mm }));
+  const gruende = reasonCounts(c, st.id).slice(0, 6).map(([r, n]) => ({ label: r, value: n, color: /fehlt|verweigert|unkonzentriert/i.test(r) ? 'var(--m)' : 'var(--p)' }));
+  return `<h3>Entwicklung und Datenbasis</h3>
+    <div class="kv">${kv.map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('')}</div>
+    <div class="charts">
+      <div class="chartbox"><h4>Notenstand im Halbjahr</h4>${noteChart([
+        { name: esc(st.name), pts: verlauf(c, st) },
+        { name: 'Kursdurchschnitt', pts: verlaufKurs(c), color: 'var(--muted)', thin: true, dash: true, label: false }
+      ], { alt: 'Notenstand im Verlauf' })}</div>
+      <div class="chartbox"><h4>Mitarbeit, gleitend über 5 Stunden</h4>${noteChart([
+        { name: esc(st.name), pts: mitarbeitReihe(c, st.id) },
+        { name: 'Kursdurchschnitt', pts: mitarbeitReiheKurs(c), color: 'var(--muted)', thin: true, dash: true, label: false }
+      ], { alt: 'Mitarbeit im Verlauf' })}</div>
+      <div class="chartbox"><h4>Tests und Klassenarbeiten</h4>${noteChart([{ name: 'Arbeiten', pts: arbeitenPts, dots: true }], { alt: 'Ergebnisse schriftlicher Leistungen', h: 170 })}</div>
+      <div class="chartbox"><h4>Wie oft welcher Stempel</h4>${barChart(stempelItems, { alt: 'Verteilung der Stempel', leer: 'Noch keine Stempel gesetzt.' })}</div>
+      ${kinds.length ? `<div class="chartbox"><h4>Andere Leistungen</h4>${barChart(kinds, { alt: 'Leistungsarten' })}</div>` : ''}
+      ${gruende.length ? `<div class="chartbox"><h4>Häufigste Gründe</h4>${barChart(gruende, { alt: 'Gründe', labelW: 150 })}</div>` : ''}
+    </div>`;
 }
 function renderSprechtag(c, st){
   const g = gesamt(c, st); const s = c.settings; const t4 = tendenz4(c, st); const ar = arrow(t4.delta); const rc = reasonCounts(c, st.id);
@@ -1632,10 +1784,13 @@ function renderEinstellungen(c){
           <label>––${numIn('settings.values.mm', v.mm, 'min="1" max="6" step="0.1"')}</label>
         </div>
         <div class="row"><label>Gewicht gestempelter Stunden (1 = wie neutrale)${numIn('settings.markedWeight', s.markedWeight, 'min="0.5" max="5" step="0.5"')}</label></div>
+        <label class="check"><input type="checkbox" data-set="settings.autoKreis" ${s.autoKreis !== false ? 'checked' : ''}> Beim Abschließen alle ohne Eintrag als ○ eintragen (zählt als Beobachtung, ändert die Note nicht)</label>
         <p class="hint">Beispiel: 20 Stunden, 5× „+“ und 1× „++“ ergibt mit Gewicht 1 die Note 3,0, mit Gewicht 2 die Note 2,6.</p>
         <h3>Leistungsarten</h3>
-        <ul class="kinds">${c.kinds.map((k, i) => `<li><input type="text" data-kind="${i}.name" value="${esc(k.name)}" ${k.id === 'stunde' ? 'disabled' : ''}><label>Kürzel <input type="text" data-kind="${i}.short" value="${esc(k.short)}" style="width:60px" ${k.id === 'stunde' ? 'disabled' : ''}></label><label>Gewicht <input type="number" data-kind="${i}.weight" value="${k.weight}" min="0.5" max="10" step="0.5"></label><label class="check" style="margin:0"><input type="checkbox" data-kind="${i}.neutral" ${k.neutral ? 'checked' : ''} ${k.id === 'stunde' ? 'disabled' : ''}> ohne Eintrag = neutral</label>${k.id === 'stunde' ? '' : `<button class="small danger" data-del-kind="${i}">✕</button>`}</li>`).join('')}</ul>
+        <p class="hint">Gewicht 2 = zählt wie zwei Stempel. „Ohne Eintrag = neutral“ gilt nur für Stunden; bei Mappen, Abgaben usw. bleibt ein leeres Feld unbewertet, wer nicht dran war, hat also keinen Nachteil. „Freiwillig“ heißt: zählt nur, wenn es die Mitarbeit verbessert, eine schwache freiwillige Abgabe schadet nie.</p>
+        <ul class="kinds">${c.kinds.map((k, i) => `<li><input type="text" data-kind="${i}.name" value="${esc(k.name)}" ${k.id === 'stunde' ? 'disabled' : ''}><label>Kürzel <input type="text" data-kind="${i}.short" value="${esc(k.short)}" style="width:60px" ${k.id === 'stunde' ? 'disabled' : ''}></label><label>Gewicht <input type="number" data-kind="${i}.weight" value="${k.weight}" min="0.5" max="10" step="0.5"></label><label class="check" style="margin:0"><input type="checkbox" data-kind="${i}.neutral" ${k.neutral ? 'checked' : ''} ${k.id === 'stunde' ? 'disabled' : ''}> ohne Eintrag = neutral</label><label class="check" style="margin:0" title="Zählt nur, wenn es die Mitarbeit verbessert"><input type="checkbox" data-kind="${i}.bonus" ${k.bonus ? 'checked' : ''} ${k.id === 'stunde' ? 'disabled' : ''}> freiwillig</label>${k.id === 'stunde' ? '' : `<button class="small danger" data-del-kind="${i}">✕</button>`}</li>`).join('')}</ul>
         <div class="row" style="margin-top:8px"><button class="small" id="btnAddKind">+ Leistungsart</button></div>
+        <div class="row"><label>Freiwilliges verbessert die Mitarbeit höchstens um … Noten (Empfehlung 0,75; 0 = unbegrenzt)${numIn('settings.bonusMax', s.bonusMax || 0, 'min="0" max="3" step="0.05"')}</label><label>Zufällig einsammeln: Anzahl${numIn('settings.sammelAnzahl', s.sammelAnzahl || 5, 'min="1" max="40" step="1"')}</label></div>
         <h3>Kriterien (Gründe beim Stempeln)</h3>
         <ul class="crit">${c.criteria.map((r, i) => `<li><input type="text" data-crit="${i}" value="${esc(r)}"><button class="small danger" data-del-crit="${i}">✕</button></li>`).join('')}</ul>
         <div class="row" style="margin-top:8px"><button class="small" id="btnAddCrit">+ Kriterium</button></div>
@@ -1707,6 +1862,13 @@ function deleteStudent(c, sid){
 function setMark(c, sid, lid, m){
   const row = (c.marks[sid] ||= {}); if (m) row[lid] = m; else { delete row[lid]; if (c.reasons[sid]) delete c.reasons[sid][lid]; }
   if (!Object.keys(row).length) delete c.marks[sid]; touchMark(c, sid, lid);
+}
+// Stunde abschließen: Status setzen und alle ohne Eintrag als „nichts aufgefallen“ (○) eintragen
+function stundeAbschliessen(c, l){
+  if (!l) return 0; undoPush(c, 'Stunde abschließen');
+  l.status = 'abgeschlossen'; const n = neutralFuellen(c, l); sync.mark(c.id);
+  if (n) toast(`Stunde abgeschlossen · ${n} ${n === 1 ? 'Kind war' : 'Kinder waren'} unauffällig (○)`, 3500); else toast('Stunde abgeschlossen');
+  return n;
 }
 function guardArchived(c){ if (c.archived) { toast('Dieser Kurs ist archiviert. Unter „Checkliste“ oder oben im Hinweis kannst du ihn wieder freigeben.', 4000); return true; } return false; }
 function applyMark(el, m, opts = {}){
@@ -1880,9 +2042,13 @@ document.addEventListener('click', e => { if (!e.target.closest('#popover') && !
 
 const view = $('#view');
 view.addEventListener('focusout', () => { if (sync.deferRender) { sync.deferRender = false; setTimeout(() => { if (!isTyping()) render(); else sync.deferRender = true; }, 150); } });
-let micTimer = null, drag = null, pan = null;
+let micTimer = null, drag = null, pan = null, swipe = null, swipeBis = 0;
+// Wischen auf einer Kachel: rechts + (weit ++), links – (weit ––). Tippen bleibt unverändert.
+const SWIPE_MIN = 24, SWIPE_WEIT = 90;
 view.addEventListener('pointerdown', e => {
   if (e.target.closest('#btnMic')) { micTimer = setTimeout(() => { micTimer = null; undoDictation(); }, 700); return; }
+  const plain = e.target.closest('.board:not(.edit) .tile');
+  if (plain && !(state.review && (state.review.phase || 1) === 1)) swipe = { tile: plain, x: e.clientX, y: e.clientY };
   const tile = e.target.closest('.board.edit .tile');
   if (!tile) {
     // Leere Fläche mit der Maus ziehen = Plan verschieben (Touch nutzt das normale Wischen)
@@ -1909,8 +2075,17 @@ const endDrag = () => {
   if (drag.moved) { const c = boardCourse(); const plan = c.plans.find(p => p.id === drag.tile.parentElement.dataset.plan) || currentPlan(c, curLesson(c)); const p = fromDisplay({ x: drag.x, y: drag.y }, drag.W, drag.H, drag.tw, drag.th); plan.pos[drag.sid] = { x: +p.x.toFixed(1), y: +p.y.toFixed(1) }; sync.mark(c.id); }
   drag = null;
 };
-view.addEventListener('pointerup', e => { if (micTimer) { clearTimeout(micTimer); micTimer = null; if (e.target.closest('#btnMic')) startDictation(); } endDrag(); });
-view.addEventListener('pointercancel', endDrag);
+view.addEventListener('pointerup', e => {
+  if (micTimer) { clearTimeout(micTimer); micTimer = null; if (e.target.closest('#btnMic')) startDictation(); }
+  if (swipe) { const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+    if (Math.abs(dx) >= SWIPE_MIN && Math.abs(dx) > Math.abs(dy)) {
+      const m = dx > 0 ? (dx >= SWIPE_WEIT ? '++' : '+') : (dx <= -SWIPE_WEIT ? '--' : '-');
+      applyMark(swipe.tile, m, { noReason: !state.reasonMode }); swipeBis = Date.now() + 400; // den folgenden Klick nicht auch noch werten
+    }
+    swipe = null; }
+  endDrag();
+});
+view.addEventListener('pointercancel', () => { swipe = null; endDrag(); });
 view.addEventListener('wheel', e => { const wrap = e.target.closest('#boardwrap'); if (!wrap || !e.ctrlKey) return; e.preventDefault(); state.boardZoom = Math.min(4, Math.max(0.4, +(boardZoom() * (e.deltaY < 0 ? 1.15 : 1 / 1.15)).toFixed(2))); persistLocal(); const sl = wrap.scrollLeft / wrap.scrollWidth, st = wrap.scrollTop / wrap.scrollHeight; renderView(); const w2 = $('#boardwrap'); if (w2) { w2.scrollLeft = sl * w2.scrollWidth; w2.scrollTop = st * w2.scrollHeight; } }, { passive: false });
 function boardCourse(){ return (state.review && byId(state.review.cid)) || course(); }
 function fitBoard(){ const wrap = $('#boardwrap'); if (!wrap) return; const c = boardCourse(); const plan = currentPlan(c, curLesson(c)); const W = boardW(plan), H = boardHeight(c, plan);
@@ -1938,6 +2113,7 @@ view.addEventListener('click', async e => {
   const cell = t.closest('td.cell'); if (cell) { const cur = (c.marks[cell.dataset.sid] || {})[cell.dataset.lid] || ''; applyMark(cell, cur === state.stamp ? '' : state.stamp); return; }
   const tile = t.closest('.tile'); if (tile) {
     if (state.seatEdit) return;
+    if (Date.now() < swipeBis) { swipeBis = 0; return; }
     const cc = boardCourse(); const l = curLesson(cc); if (!l) return; const cur = (cc.marks[tile.dataset.tile] || {})[l.id] || '';
     if (state.review && (state.review.phase || 1) === 1) { applyMark(tile, cur === 'F' ? '' : 'F', { noReason: true }); return; }
     applyMark(tile, cur === state.stamp ? '' : state.stamp); return; }
@@ -1968,12 +2144,18 @@ view.addEventListener('click', async e => {
     case 'btnAddLesson': { const l = addLesson(c); state.editLesson = l.id; state.curLesson = l.id; sync.mark(); renderView(); const sc = $('.scroll'); if (sc) sc.scrollLeft = sc.scrollWidth; break; }
     case 'btnFillSchedule': { const miss = missingScheduleDates(c); if (!await ask(`${miss.length} Stunden als offene Stunden anlegen (${miss.map(shortDate).join(', ')})? Ausgefallene Stunden markierst du danach als Ausfall.`, { okLabel: 'Anlegen' })) return; for (const d of miss) addLesson(c, 'stunde', d); sync.mark(); renderView(); break; }
     case 'btnDeleteLesson': { const l = c.lessons.find(x => x.id === state.editLesson); if (l && await confirmA(`Spalte vom ${longDate(l.date)} mit allen Einträgen löschen?`)) { undoPush(c, 'Stunde löschen'); c.lessons = c.lessons.filter(x => x.id !== l.id); tomb(c, 'lessons', l.id); for (const sid in c.marks) delete c.marks[sid][l.id]; for (const sid in c.reasons) delete c.reasons[sid][l.id]; state.editLesson = null; if (state.curLesson === l.id) state.curLesson = null; sync.mark(); renderView(); } break; }
-    case 'btnLessonStatus': { const l = c.lessons.find(x => x.id === state.editLesson); if (l) { l.status = l.status === 'abgeschlossen' ? 'offen' : 'abgeschlossen'; sync.mark(); renderView(); } break; }
+    case 'btnLessonStatus': { const l = c.lessons.find(x => x.id === state.editLesson); if (!l) break;
+      if (l.status === 'abgeschlossen') { undoPush(c, 'Stunde wieder öffnen'); l.status = 'offen'; sync.mark(); } else stundeAbschliessen(c, l);
+      renderView(); break; }
     case 'btnCloseLesson': state.editLesson = null; renderView(); break;
+    case 'btnSammeln': { const l = c.lessons.find(x => x.id === state.editLesson); if (!l) break; const n = c.settings.sammelAnzahl || 5;
+      const ids = zufallsAuswahl(c, l.kind || 'stunde', n).map(st => st.id); state.sammel = { cid: c.id, lid: l.id, ids }; persistLocal(); renderView();
+      const names = ids.map(id => (c.students.find(s => s.id === id) || {}).name).filter(Boolean).join(', '); toast(`Heute einsammeln: ${names}`, 6000); break; }
+    case 'btnSammelnWeg': state.sammel = null; persistLocal(); renderView(); break;
     case 'btnReviewBack': case 'btnReviewLater': state.review = null; state.tab = 'start'; persistLocal(); render(); break;
     case 'btnReviewNext': state.review.phase = 2; persistLocal(); renderView(); window.scrollTo(0, 0); break;
     case 'btnReviewPrev': state.review.phase = 1; persistLocal(); renderView(); window.scrollTo(0, 0); break;
-    case 'btnReviewClose': { const cc = byId(state.review.cid); const l = cc && cc.lessons.find(x => x.id === state.review.lid); if (l) { l.status = 'abgeschlossen'; sync.mark(cc.id); } nextReview(cc.id, l ? l.id : null); break; }
+    case 'btnReviewClose': { const cc = byId(state.review.cid); const l = cc && cc.lessons.find(x => x.id === state.review.lid); if (l && l.status !== 'abgeschlossen') stundeAbschliessen(cc, l); nextReview(cc.id, l ? l.id : null); break; }
     case 'btnViewMode': state.viewMode = state.viewMode === 'kacheln' ? 'tabelle' : 'kacheln'; state.seatEdit = false; persistLocal(); renderView(); break;
     case 'btnSeatEdit': state.seatEdit = !state.seatEdit; renderView(); break;
     case 'btnSnap': state.snap = !state.snap; persistLocal(); btn.classList.toggle('on', state.snap); break;
@@ -1988,7 +2170,7 @@ view.addEventListener('click', async e => {
     case 'btnFairShift': { const key = state.tab === 'ka' ? 'klassenarbeiten' : 'tests'; const it = c[key].find(x => x.id === state.editItem); if (it) { it.shift = (+it.shift || 0) + (+btn.dataset.shift); sync.mark(); renderView(); } break; }
     case 'btnAddStudents': { const n = addStudents(c, $('#newStudents').value); if (n) { sync.mark(); renderView(); toast(`${n} hinzugefügt`); } break; }
     case 'btnSortStudents': c.students.sort((a, b) => a.name.localeCompare(b.name, 'de')); c.students.forEach((s, i) => s.seat = i); sync.mark(); renderView(); break;
-    case 'btnAddKind': c.kinds.push({ id: uid(), name: 'Neue Leistungsart', short: '', weight: 1, neutral: false }); sync.mark(); renderView(); break;
+    case 'btnAddKind': c.kinds.push({ id: uid(), name: 'Neue Leistungsart', short: '', weight: 1, neutral: false, bonus: false }); sync.mark(); renderView(); break;
     case 'btnAddCrit': c.criteria.push('Neues Kriterium'); sync.mark(); renderView(); break;
     case 'btnCsv': csvExport(c); break;
     case 'btnPrint': window.print(); break;
@@ -2071,7 +2253,7 @@ view.addEventListener('change', async e => {
     if (isV) st.vornote = n; else st.override = n; sync.mark(); renderView(); return; }
   if (t.matches('[data-student-name]')) { const st = c.students.find(s => s.id === t.dataset.studentName); if (st) { const v = t.value.trim(); if (v) st.name = v; else t.value = st.name; sync.mark(); } return; }
   if (t.matches('[data-student-alias]')) { const st = c.students.find(s => s.id === t.dataset.studentAlias); if (st) { st.alias = t.value.trim(); sync.mark(); } return; }
-  if (t.matches('[data-kind]')) { const [i, f] = t.dataset.kind.split('.'); const k = c.kinds[+i]; if (!k) return; if (f === 'neutral') k.neutral = t.checked; else if (f === 'weight') k.weight = Math.max(0.5, num(t.value) || 1); else k[f] = t.value.trim() || k[f]; sync.mark(); if (f === 'weight') t.value = k.weight; return; }
+  if (t.matches('[data-kind]')) { const [i, f] = t.dataset.kind.split('.'); const k = c.kinds[+i]; if (!k) return; if (f === 'neutral' || f === 'bonus') k[f] = t.checked; else if (f === 'weight') k.weight = Math.max(0.5, num(t.value) || 1); else k[f] = t.value.trim() || k[f]; sync.mark(); if (f === 'weight') t.value = k.weight; return; }
   if (t.matches('[data-crit]')) { c.criteria[+t.dataset.crit] = t.value.trim() || c.criteria[+t.dataset.crit]; sync.mark(); return; }
   if (t.matches('[data-ferien]')) { const [i, f] = t.dataset.ferien.split('.'); const e2 = c.ferien[+i]; if (e2) { e2[f] = t.value.trim(); sync.mark(); } return; }
   if (t.matches('[data-na]')) { const st = c.students.find(s => s.id === state.detail); if (!st) return; st.na ||= { zeit: false, rs: false, text: '' }; const k = t.dataset.na; st.na[k] = t.type === 'checkbox' ? t.checked : t.value.trim(); sync.mark(); return; }
