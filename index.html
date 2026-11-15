@@ -315,6 +315,9 @@ dialog ol,dialog ul{padding-left:20px}
 #askDialog p{font-size:14px;white-space:pre-line}
 #askDialog input{width:100%;margin:6px 0 12px}
 #askDialog .btns{display:flex;flex-direction:row-reverse;gap:8px}
+/* Meldung „Neue Version verfügbar“ */
+.updatebar{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;background:var(--surface);color:var(--text);border:1px solid var(--accent);border-radius:12px;padding:8px 10px 8px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:14px;max-width:calc(100vw - 24px)}
+.updatebar button{min-height:36px;white-space:nowrap}
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:calc(100vw - 32px);text-align:center}
 .toast.show{opacity:1}
 .print-only{display:none}
@@ -444,8 +447,10 @@ html.gross h2{font-size:20px} html.gross h3{font-size:14px}
   <button data-menu="btnRestore">Sicherung laden</button>
   <button data-menu="btnGross" id="menuGross">Großansicht</button>
   <button data-menu="btnHelp">Hilfe und Rechenregeln</button>
+  <button id="menuUpdate">Nach neuer Version suchen</button>
   <div class="menuversion" id="menuVersion"></div>
 </div>
+<div class="updatebar" id="updateBar" hidden role="status"><span id="updateText">Neue Version verfügbar.</span><button class="primary" id="btnUpdate">Aktualisieren</button><button id="btnUpdateSpaeter" title="Später" aria-label="Später">✕</button></div>
 <nav class="tabs" id="tabs"></nav>
 <main id="view"></main>
 <nav class="tabbar" id="tabbar"></nav>
@@ -1003,7 +1008,7 @@ return { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS,
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'Version 24';
+const APP_VERSION = 'Version 25';
 const KEY = 'notenbuch-sek1-v2';
 const KEY_OLD = 'notenbuch-sek1-v1';
 const STORE_KEY = 'notenbuch-storage-v1';
@@ -2420,6 +2425,37 @@ view.addEventListener('change', async e => {
 
 // ---------- Start ----------
 $('#appVersion').textContent = APP_VERSION; updateUndoButtons();
+// ---------- Update-Prüfung ----------
+// Die App fragt ihre eigene Adresse ohne Zwischenspeicher ab und vergleicht die Versionsnummer. Nur in der gehosteten
+// Fassung (http/https, z. B. GitHub Pages); in der Claude-Seite und bei lokal geöffneter Datei gibt es nichts abzufragen.
+const versionNr = s => { const m = /Version\s+(\d+)/.exec(s || ''); return m ? +m[1] : 0; };
+const updateUrl = () => location.origin + location.pathname;
+const updateMoeglich = () => !hasClaude && /^https?:$/.test(location.protocol);
+let updateNeu = 0, updateGeprueft = 0, updateSpaeter = 0;
+async function checkUpdate(force){
+  if (!updateMoeglich()) { if (force) toast(hasClaude ? 'Die Claude-Seite aktualisiert sich selbst.' : 'Diese Datei liegt lokal auf dem Gerät. Für eine neue Version die Datei ersetzen.', 4500); return; }
+  if (!navigator.onLine) { if (force) toast('Keine Internetverbindung.'); return; }
+  if (!force && Date.now() - updateGeprueft < 10 * 60e3) return; updateGeprueft = Date.now();
+  try {
+    const r = await fetch(updateUrl() + '?check=' + Date.now(), { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status);
+    const m = /APP_VERSION = 'Version (\d+)'/.exec(await r.text()); const neu = m ? +m[1] : 0;
+    if (neu > versionNr(APP_VERSION) && (force || neu !== updateSpaeter)) { updateNeu = neu; $('#updateText').textContent = `Neue Version ${neu} verfügbar.`; $('#updateBar').hidden = false; }
+    else if (force) toast(`Du hast die neueste Version (${APP_VERSION}).`, 3000);
+  } catch (e) { if (force) toast('Prüfung nicht möglich: ' + (e.message || e), 4000); }
+}
+async function doUpdate(){
+  const b = $('#btnUpdate'); b.disabled = true; b.textContent = 'Lade …'; persistLocal();
+  try { if (sync.dirty && sync.dirty.size) await sync.flush(); } catch (e) {} // offene Änderungen vorher hochladen; lokal sind sie ohnehin gespeichert
+  try { await fetch(updateUrl(), { cache: 'reload' }); } catch (e) {}          // Zwischenspeicher des Geräts auffrischen, damit auch der nächste Start die neue Fassung bekommt
+  location.replace(updateUrl() + '?v=' + updateNeu);
+}
+$('#btnUpdate').addEventListener('click', doUpdate);
+$('#btnUpdateSpaeter').addEventListener('click', () => { updateSpaeter = updateNeu; $('#updateBar').hidden = true; toast('Später. Über das Menü „Nach neuer Version suchen“ jederzeit möglich.', 3500); });
+$('#menuUpdate').addEventListener('click', () => { $('#menu').hidden = true; checkUpdate(true); });
+if (!updateMoeglich()) $('#menuUpdate').hidden = true;
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(false); });
+setTimeout(() => checkUpdate(false), 2500);
+
 render();
 sync.start();
 { const oldest = Math.min(...state.courses.filter(c => !c.isExample).map(c => c.created || Date.now()), Date.now()); const ref = state.lastBackup || oldest;
