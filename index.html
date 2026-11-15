@@ -156,6 +156,9 @@ html.gross .assess select.ptsel{width:92px;font-size:17px;min-height:44px}
 .trend.up{color:var(--pp)} .trend.down{color:var(--m)}
 .ov input.override{width:60px;text-align:center;font-family:var(--mono);font-weight:700;padding:4px}
 .ov input.bem{width:200px}
+/* Quartalsnoten Q1–Q4: selbst festgelegt */
+.ov select.qsel{width:62px;padding:4px 2px;font-family:var(--mono);font-weight:700;text-align:center;color:var(--muted)} .ov select.qsel.gesetzt{color:var(--text);border-color:var(--accent)} .ov th.qh{text-align:center}
+html.gross .ov select.qsel{width:76px;font-size:17px;min-height:44px}
 .ov .namebtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;text-decoration:underline;cursor:pointer;text-align:left}
 .spiegel{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
 .spiegel .box{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 14px;text-align:center;min-width:70px}
@@ -525,11 +528,14 @@ function newCourse(name, fach = '', halbjahr = ''){
 }
 function newPlan(name){ return { id: uid(), name, pos: {}, boardH: 0, tileW: 14, boardW: 100 }; }
 // notizen: freie Beobachtungen fürs Eltern- oder Zeugnisgespräch, art '+' (positiv), '-' (zu verbessern), 'i' (sonstiges)
-function newStudent(name){ return { id: uid(), name, alias: '', seat: null, vornote: null, override: null, bem: '', vermerk: '', gespraeche: [], notizen: [], na: { zeit: false, rs: false, text: '' } }; }
+// quartal: von der Lehrkraft selbst eingetragene Quartalsnoten {1:'2+',2:'3',…}; werden nie berechnet und gehen in keine Rechnung ein
+function newStudent(name){ return { id: uid(), name, alias: '', seat: null, vornote: null, override: null, bem: '', vermerk: '', gespraeche: [], notizen: [], quartal: {}, na: { zeit: false, rs: false, text: '' } }; }
 function newLesson(kind = 'stunde', date = today()){ return { id: uid(), date, topic: '', kind, ausfall: false, status: 'offen' }; }
 function newItem(name, max = 20, mode = 'punkte'){ return { id: uid(), name, date: today(), max, weight: 1, mode: mode === 'note' ? 'note' : 'punkte', shift: 0, results: {} }; }
 // Auswahl bei direkter Noteneingabe: 1+, 1, 1-, … 5-, 6
 const NOTEN_WAHL = () => [...NP_LABEL, '6'];
+// Leere Quartalsfelder eines Quartals mit der berechneten Tendenznote vorbelegen (als Ausgangspunkt zum Anpassen). Liefert die Anzahl.
+function quartalVorbelegen(c, q){ let n = 0; for (const st of c.students) { st.quartal ||= {}; if (st.quartal[q]) continue; const g = gesamt(c, st); if (g.basis == null) continue; st.quartal[q] = tendenz(g.basis); n++; } return n; }
 // Eingabeart einer Arbeit wechseln. Punkte → Note: vorhandene Punkte werden in die Tendenznote umgerechnet (z. B. 2,3 → „2-“).
 // Note → Punkte: Noten lassen sich nicht in Punkte zurückrechnen, die Einträge bleiben stehen. Liefert die Zahl umgerechneter Einträge.
 function modusWechsel(c, it, mode){
@@ -567,7 +573,7 @@ function migrate(c){
   c.schedule ||= []; c.students ||= []; c.lessons ||= []; c.marks ||= {}; c.reasons ||= {}; c.tests ||= []; c.klassenarbeiten ||= [];
   c.checklist = Object.assign({ nachschreiberOk: false, spiegelSeen: false }, c.checklist || {});
   c.archived = !!c.archived; c.archivedAt ||= null;
-  c.students.forEach(s => { s.alias ??= ''; s.seat ??= null; s.vornote ??= null; s.override ??= null; s.bem ??= ''; s.vermerk ??= ''; if (!Array.isArray(s.gespraeche)) s.gespraeche = []; if (!Array.isArray(s.notizen)) s.notizen = []; s.na = Object.assign({ zeit: false, rs: false, text: '' }, s.na || {}); });
+  c.students.forEach(s => { s.alias ??= ''; s.seat ??= null; s.vornote ??= null; s.override ??= null; s.bem ??= ''; s.vermerk ??= ''; if (!Array.isArray(s.gespraeche)) s.gespraeche = []; if (!Array.isArray(s.notizen)) s.notizen = []; if (!s.quartal || typeof s.quartal !== 'object' || Array.isArray(s.quartal)) s.quartal = {}; s.na = Object.assign({ zeit: false, rs: false, text: '' }, s.na || {}); });
   if (!Array.isArray(c.ferien)) c.ferien = DEF_FERIEN();
   // Sitzpläne: alte Einzelpositionen (st.pos) wandern in den ersten Plan
   if (!Array.isArray(c.plans) || !c.plans.length) { const p = newPlan('Sitzplan 1'); p.boardH = c.settings.boardH || 0; for (const s of c.students) if (s.pos) p.pos[s.id] = s.pos; c.plans = [p]; }
@@ -1001,14 +1007,14 @@ return { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS,
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, kursAlterTage, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow, anteile,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, touchMark, touchResult, tomb, pruneStamps, sampleCourse,
   DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs,
-  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel };
+  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel, quartalVorbelegen };
 })();
 </script>
 
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'Version 25';
+const APP_VERSION = 'Version 26';
 const KEY = 'notenbuch-sek1-v2';
 const KEY_OLD = 'notenbuch-sek1-v1';
 const STORE_KEY = 'notenbuch-storage-v1';
@@ -1017,7 +1023,7 @@ const { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS, 
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, kursAlterTage, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow, anteile,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, touchMark, touchResult, tomb, pruneStamps, sampleCourse,
   DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs,
-  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel } = window.NB;
+  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel, quartalVorbelegen } = window.NB;
 const DEFAULT_DBX_KEY = ''; // Hier kann ein fester Dropbox-App-Key eingetragen werden, dann entfällt die Eingabe für alle Geräte
 const isStandalone = () => window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
 const $ = (s, r = document) => r.querySelector(s);
@@ -1579,7 +1585,9 @@ function renderUebersicht(c){
   let lowCov = 0;
   // Sortierung per Spaltenkopf (Zustand je Gerät): Zahlen aufsteigend = beste Note zuerst, Leeres immer ans Ende
   const us = state.uebSort || { key: 'name', dir: 1 };
-  const wert = (st, g) => ({ name: st.name.toLowerCase(), ma: g.ma.note, tr: g.tr ? g.tr.delta : null, te: g.te.note, somi: g.somi, ka: g.ka.note, ges: g.ges, vornote: st.vornote, jahr: g.jahr, tendenz: g.basis, vorschlag: g.basis, override: st.override })[us.key];
+  const wert = (st, g) => ({ name: st.name.toLowerCase(), ma: g.ma.note, tr: g.tr ? g.tr.delta : null, te: g.te.note, somi: g.somi, ka: g.ka.note, ges: g.ges, vornote: st.vornote, jahr: g.jahr, tendenz: g.basis, vorschlag: g.basis, override: st.override, q1: parseNote((st.quartal || {})[1]), q2: parseNote((st.quartal || {})[2]), q3: parseNote((st.quartal || {})[3]), q4: parseNote((st.quartal || {})[4]) })[us.key];
+  // Quartalsnote: Auswahl 1+ … 6, von der Lehrkraft gesetzt, geht in keine Rechnung ein
+  const qSel = (st, q) => { const cur = String((st.quartal || {})[q] || '').replace(/\s+/g, ''); const wahl = NOTEN_WAHL(); return `<td style="text-align:center"><select class="qsel ${cur ? 'gesetzt' : ''}" data-quartal="${st.id}:${q}" title="Note ${q}. Quartal, selbst festgelegt"><option value="">–</option>${cur && !wahl.includes(cur) ? `<option value="${esc(cur)}" selected>${esc(cur)}</option>` : ''}${wahl.map(n => `<option value="${n}" ${cur === n ? 'selected' : ''}>${n.replace('-', '−')}</option>`).join('')}</select></td>`; };
   const paare = c.students.map(st => ({ st, g: gesamt(c, st) }));
   paare.sort((a, b) => { const va = wert(a.st, a.g), vb = wert(b.st, b.g); const la = va == null || va === '', lb = vb == null || vb === ''; if (la || lb) return la && lb ? a.st.name.localeCompare(b.st.name, 'de') : la ? 1 : -1;
     const d = typeof va === 'string' ? va.localeCompare(vb, 'de') : va - vb; return (d || a.st.name.localeCompare(b.st.name, 'de')) * (d ? us.dir : 1); });
@@ -1597,6 +1605,7 @@ function renderUebersicht(c){
       <td class="num"><b style="font-family:var(--mono);font-size:15px">${fmt(g.ges)}</b></td>
       ${showVor ? `<td style="text-align:center"><input class="override" inputmode="numeric" data-vornote="${st.id}" value="${st.vornote ?? ''}" placeholder="–" title="Note des 1. Halbjahres"></td><td class="num">${g.jahr == null ? '<span class="gnull">–</span>' : `<b style="font-family:var(--mono)">${fmt(g.jahr)}</b>`}</td>` : ''}
       <td class="num">${tendenz(g.basis)}</td>
+      ${[1, 2, 3, 4].map(q => qSel(st, q)).join('')}
       <td style="text-align:center">${vorschlag}</td>
       <td style="text-align:center"><input class="override" inputmode="numeric" data-override="${st.id}" value="${st.override ?? ''}" placeholder="${g.vorschlag ?? '–'}" title="Leer = Vorschlag übernehmen. Eingabe überschreibt die Berechnung."></td>
       <td><input type="text" class="bem" data-bem="${st.id}" value="${esc(st.bem || '')}" placeholder="Bemerkung"></td>
@@ -1607,13 +1616,13 @@ function renderUebersicht(c){
   for (const st of c.students) { const z = gesamt(c, st).zeugnis; if (z != null) { counts[Math.round(clamp(z))]++; sum += z; k++; } }
   const spiegel = `<div class="spiegel no-print">${[1,2,3,4,5,6].map(n => `<div class="box ${counts[n] ? 'g' + n : ''}"><b>${counts[n]}</b><span>Note ${n}</span></div>`).join('')}<div class="box"><b>${k ? fmt(sum / k) : '–'}</b><span>Ø Zeugnis</span></div></div>`;
   return `<section class="pane ov">
-    <div class="toolbar"><h2>Übersicht und Zeugnisvorschlag</h2><div class="spacer"></div><button id="btnCsv" data-ro="1">Als CSV exportieren</button><button id="btnPrint" data-ro="1">Drucken</button></div>
+    <div class="toolbar"><h2>Übersicht und Zeugnisvorschlag</h2><div class="spacer"></div><select id="quartalFill" class="no-print" title="Leere Felder eines Quartals mit der berechneten Tendenz füllen, danach einzeln anpassen"><option value="">Quartal vorbelegen …</option>${[1, 2, 3, 4].map(q => `<option value="${q}">Q${q}: leere Felder mit berechneter Tendenz füllen</option>`).join('')}</select><button id="btnCsv" data-ro="1">Als CSV exportieren</button><button id="btnPrint" data-ro="1">Drucken</button></div>
     ${lowCov ? `<div class="banner"><b>${lowCov}</b> Kind${lowCov > 1 ? 'er' : ''} mit weniger als ${s.minEntries} Beobachtungen in abgeschlossenen Stunden.</div>` : ''}
-    <p class="hint">Gesamt = ${s.hasKA ? `${100 - s.kaWeight} % Sonstige Leistungen + ${s.kaWeight} % Klassenarbeiten` : '100 % Sonstige Leistungen'}; Sonstige Leistungen = ${100 - s.testShare} % Mitarbeit + ${s.testShare} % Tests.${s.vornoteWeight > 0 ? ` Jahresnote = ${100 - s.vornoteWeight} % Gesamt + ${s.vornoteWeight} % Note 1. Halbjahr.` : ''} Nur abgeschlossene Stunden zählen. Mitarbeit zeigt Beobachtungen/Stunden. Name antippen öffnet die Kindseite. Spaltenkopf antippen sortiert die Liste, nochmal antippen dreht die Reihenfolge um.</p>
+    <p class="hint">Gesamt = ${s.hasKA ? `${100 - s.kaWeight} % Sonstige Leistungen + ${s.kaWeight} % Klassenarbeiten` : '100 % Sonstige Leistungen'}; Sonstige Leistungen = ${100 - s.testShare} % Mitarbeit + ${s.testShare} % Tests.${s.vornoteWeight > 0 ? ` Jahresnote = ${100 - s.vornoteWeight} % Gesamt + ${s.vornoteWeight} % Note 1. Halbjahr.` : ''} Nur abgeschlossene Stunden zählen. Mitarbeit zeigt Beobachtungen/Stunden. Name antippen öffnet die Kindseite. Spaltenkopf antippen sortiert die Liste, nochmal antippen dreht die Reihenfolge um. <b>Q1 bis Q4</b> sind deine Quartalsnoten: Du legst sie selbst fest, die App rechnet daran nichts. „Quartal vorbelegen“ füllt leere Felder mit der berechneten Tendenz als Ausgangspunkt.</p>
     <h1 class="print-only">${esc(c.name)}${c.fach ? ' · ' + esc(c.fach) : ''}${c.halbjahr ? ' · ' + esc(c.halbjahr) : ''} – Stand ${longDate(today())}</h1>
     <div class="scroll"><table><thead><tr>
-      ${th('name', 'Schüler/in', 'sticky-col')}${th('ma', 'Mitarbeit', 'num')}${th('tr', 'Verlauf HJ', '', 'Mitarbeit: zweite Hälfte des Halbjahres gegenüber der ersten, nur bei genug Beobachtungen. Antippen sortiert: größte Verbesserung zuerst.')}${th('te', 'Tests', 'num')}${th('somi', 'Sonst. Leist.', 'num')}${s.hasKA ? th('ka', 'Klassenarb.', 'num') : ''}${th('ges', 'Gesamt', 'num')}${showVor ? th('vornote', '1. HJ') + th('jahr', 'Jahresnote', 'num') : ''}${th('tendenz', 'Tendenz', 'num')}${th('vorschlag', 'Vorschlag')}${th('override', 'Zeugnisnote')}<th>Bemerkung</th><th>Hinweise</th>
-    </tr></thead><tbody>${rows || `<tr><td colspan="14" class="empty">Noch keine Schüler im Kurs.</td></tr>`}</tbody></table></div>
+      ${th('name', 'Schüler/in', 'sticky-col')}${th('ma', 'Mitarbeit', 'num')}${th('tr', 'Verlauf HJ', '', 'Mitarbeit: zweite Hälfte des Halbjahres gegenüber der ersten, nur bei genug Beobachtungen. Antippen sortiert: größte Verbesserung zuerst.')}${th('te', 'Tests', 'num')}${th('somi', 'Sonst. Leist.', 'num')}${s.hasKA ? th('ka', 'Klassenarb.', 'num') : ''}${th('ges', 'Gesamt', 'num')}${showVor ? th('vornote', '1. HJ') + th('jahr', 'Jahresnote', 'num') : ''}${th('tendenz', 'Tendenz', 'num')}${[1, 2, 3, 4].map(q => th('q' + q, 'Q' + q, 'qh', `Note ${q}. Quartal: trägst du selbst ein, wird nicht berechnet. Antippen sortiert.`)).join('')}${th('vorschlag', 'Vorschlag')}${th('override', 'Zeugnisnote')}<th>Bemerkung</th><th>Hinweise</th>
+    </tr></thead><tbody>${rows || `<tr><td colspan="18" class="empty">Noch keine Schüler im Kurs.</td></tr>`}</tbody></table></div>
     ${spiegel}
   </section>`;
 }
@@ -1668,6 +1677,7 @@ function renderDetail(c, st){
       ${g.jahr != null ? `<div><b>${fmt(g.jahr)}</b><span>Jahresnote</span></div>` : ''}
       <div><b>${g.ermessen ? Math.floor(g.basis) + ' / ' + (Math.floor(g.basis) + 1) : (g.vorschlag ?? '–')}</b><span>Vorschlag${g.ermessen ? ' (Ermessen)' : ''}</span></div>
       <div><b>${st.override ?? '–'}</b><span>Zeugnisnote (manuell)</span></div>
+      ${[1, 2, 3, 4].some(q => (st.quartal || {})[q]) ? `<div><b style="font-size:15px">${[1, 2, 3, 4].map(q => `Q${q} ${esc((st.quartal || {})[q] || '–').replace('-', '−')}`).join(' · ')}</b><span>Quartalsnoten (selbst festgelegt)</span></div>` : ''}
       <div><b><span class="trend ${ar.cls}">${ar.sym}</span></b><span>${ar.text}</span></div>
       <div><b>${g.ma.cnt.f}</b><span>Fehlstunden von ${g.ma.total}</span></div>
       ${g.ma.freiwillig ? `<div><b>${g.ma.bonus > 0 ? '−' + fmt(g.ma.bonus, 1) : '±0'}</b><span>durch ${g.ma.freiwillig} freiwillige Abgabe${g.ma.freiwillig === 1 ? '' : 'n'}${g.ma.bonus > 0 ? ' (von ' + fmt(g.ma.roh, 1) + ')' : ', ohne Wirkung'}</span></div>` : ''}
@@ -1788,6 +1798,7 @@ function renderSprechtag(c, st){
       <tr><td>Tests</td><td class="num">${fmt(g.te.note, 1)}</td><td class="flag">${g.te.k} Test${g.te.k === 1 ? '' : 's'} · Anteil ${anteile(s).te} %</td></tr>
       ${s.hasKA ? `<tr><td>Klassenarbeiten</td><td class="num">${fmt(g.ka.note, 1)}</td><td class="flag">${g.ka.k} Arbeit${g.ka.k === 1 ? '' : 'en'} · Anteil ${anteile(s).ka} %</td></tr>` : ''}
       ${st.vornote != null && s.vornoteWeight > 0 ? `<tr><td>Note 1. Halbjahr</td><td class="num">${st.vornote}</td><td class="flag">Anteil ${s.vornoteWeight} % an der Jahresnote</td></tr>` : ''}
+      ${[1, 2, 3, 4].filter(q => (st.quartal || {})[q]).map(q => `<tr><td>Note ${q}. Quartal</td><td class="num">${esc(st.quartal[q]).replace('-', '−')}</td><td class="flag">von der Lehrkraft festgelegt</td></tr>`).join('')}
     </tbody></table>
     <h2>Verlauf im Halbjahr</h2>${verlaufSvg(verlauf(c, st))}
     <div class="form">
@@ -2002,10 +2013,10 @@ function nextReview(afterCid, afterLid){
 }
 function csvExport(c){
   const s = c.settings; const sep = ';';
-  const head = ['Kürzel','Mitarbeit','Beobachtungen','Stunden','Fehlstunden','Trend 4 Wochen','Tests','Sonstige Leistungen', ...(s.hasKA ? ['Klassenarbeiten'] : []), 'Gesamt','Note 1. HJ','Jahresnote','Tendenz','Vorschlag','Zeugnisnote','Ampel','Nicht mitgeschrieben','Bemerkung','Vermerk','Hinweise'];
+  const head = ['Kürzel','Mitarbeit','Beobachtungen','Stunden','Fehlstunden','Trend 4 Wochen','Tests','Sonstige Leistungen', ...(s.hasKA ? ['Klassenarbeiten'] : []), 'Gesamt','Note 1. HJ','Jahresnote','Tendenz','Q1','Q2','Q3','Q4','Vorschlag','Zeugnisnote','Ampel','Nicht mitgeschrieben','Bemerkung','Vermerk','Hinweise'];
   const lines = [head.join(sep)];
   for (const st of c.students) { const g = gesamt(c, st); const t4 = tendenz4(c, st); const a = ampel(c, st, g, t4);
-    lines.push([st.name, fmt(g.ma.note), g.ma.entries, g.ma.n, g.ma.cnt.f, t4.delta == null ? '' : fmt(-t4.delta, 1), fmt(g.te.note), fmt(g.somi), ...(s.hasKA ? [fmt(g.ka.note)] : []), fmt(g.ges), st.vornote ?? '', fmt(g.jahr), tendenz(g.basis), g.vorschlag ?? '', g.zeugnis ?? '', a.farbe + (a.gruende.length ? ': ' + a.gruende.join(', ') : ''), g.nm.map(x => x.it.name).join(', '), st.bem || '', st.vermerk || '', [g.warn, ...g.flags].filter(Boolean).join(', ')].map(x => `"${String(x).replace(/"/g, '""')}"`).join(sep)); }
+    lines.push([st.name, fmt(g.ma.note), g.ma.entries, g.ma.n, g.ma.cnt.f, t4.delta == null ? '' : fmt(-t4.delta, 1), fmt(g.te.note), fmt(g.somi), ...(s.hasKA ? [fmt(g.ka.note)] : []), fmt(g.ges), st.vornote ?? '', fmt(g.jahr), tendenz(g.basis), ...[1, 2, 3, 4].map(q => (st.quartal || {})[q] || ''), g.vorschlag ?? '', g.zeugnis ?? '', a.farbe + (a.gruende.length ? ': ' + a.gruende.join(', ') : ''), g.nm.map(x => x.it.name).join(', '), st.bem || '', st.vermerk || '', [g.warn, ...g.flags].filter(Boolean).join(', ')].map(x => `"${String(x).replace(/"/g, '""')}"`).join(sep)); }
   return downloadFile(`${c.name.replace(/[^\w\-äöüÄÖÜß ]/g, '')}-Noten-${today()}.csv`, '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8');
 }
 async function downloadFile(name, content, type){
@@ -2054,7 +2065,7 @@ function duplicateCourse(c){
   const d = newCourse(c.name.replace(/\s*\(neu\)$/, ''), c.fach, /1\.\s*H/i.test(c.halbjahr || '') ? c.halbjahr.replace(/1\.\s*H/i, '2. H') : '2. Halbjahr');
   d.settings = clone(c.settings); d.settings.vornoteWeight = d.settings.vornoteWeight || 40; d.kinds = clone(c.kinds); d.criteria = clone(c.criteria); d.schedule = clone(c.schedule);
   const idMap = new Map();
-  d.students = c.students.map(s => { const n = newStudent(s.name); idMap.set(s.id, n.id); n.alias = s.alias; n.seat = s.seat; n.vornote = gesamt(c, s).zeugnis; n.vermerk = s.vermerk || ''; n.gespraeche = clone(s.gespraeche || []); n.notizen = clone(s.notizen || []); n.na = clone(s.na || { zeit: false, rs: false, text: '' }); return n; });
+  d.students = c.students.map(s => { const n = newStudent(s.name); idMap.set(s.id, n.id); n.alias = s.alias; n.seat = s.seat; n.vornote = gesamt(c, s).zeugnis; n.vermerk = s.vermerk || ''; n.gespraeche = clone(s.gespraeche || []); n.notizen = clone(s.notizen || []); n.quartal = clone(s.quartal || {}); n.na = clone(s.na || { zeit: false, rs: false, text: '' }); return n; });
   d.ferien = clone(c.ferien || []);
   d.plans = (c.plans || []).map(p => { const q = newPlan(p.name); q.boardH = p.boardH; for (const [sid, pos] of Object.entries(p.pos || {})) if (idMap.has(sid)) q.pos[idMap.get(sid)] = clone(pos); return q; });
   const planMap = new Map((c.plans || []).map((p, i) => [p.id, d.plans[i].id])); d.schedule.forEach(e => { if (e.plan && planMap.has(e.plan)) e.plan = planMap.get(e.plan); });
@@ -2403,6 +2414,12 @@ view.addEventListener('change', async e => {
   if (t.id === 'itemShift' || t.id === 'itemMax' || t.id === 'itemDate') { renderView(); return; }
   if (t.id === 'lessonKind' || t.id === 'lessonAusfall' || t.id === 'lessonW') { const l = c.lessons.find(x => x.id === state.editLesson); if (!l) return; if (t.id === 'lessonKind') l.kind = t.value; else if (t.id === 'lessonW') { undoPush(c, 'Spaltengewicht ändern'); const w = +t.value; if (w === 1) delete l.w; else l.w = w; } else l.ausfall = t.checked; sync.mark(); renderView(); return; }
   if (t.matches('[data-sched-dauer]')) { const e2 = c.schedule.find(x => +x.wd === +t.dataset.schedDauer); if (e2) { e2.dauer = t.checked ? 2 : 1; sync.mark(); } return; }
+  // Quartalsnoten: frei gesetzt, ohne Einfluss auf die Berechnung
+  if (t.matches('select.qsel')) { if (guardArchived(c)) return; const [sid, q] = t.dataset.quartal.split(':'); const st = c.students.find(s => s.id === sid); if (!st) return;
+    undoPush(c, `Quartalsnote Q${q} bei ${st.name}`); st.quartal ||= {}; if (t.value) st.quartal[q] = t.value; else delete st.quartal[q]; t.classList.toggle('gesetzt', !!t.value); sync.mark(); return; }
+  if (t.id === 'quartalFill') { const q = t.value; t.value = ''; if (!q || guardArchived(c)) return;
+    if (!await ask(`Alle leeren Felder im ${q}. Quartal mit der berechneten Tendenz füllen? Schon eingetragene Noten bleiben unverändert. Danach kannst du jede Note einzeln anpassen.`, { okLabel: 'Füllen' })) return;
+    undoPush(c, `Q${q} vorbelegen`); const n = quartalVorbelegen(c, q); sync.mark(); renderView(); toast(n ? `${n} Felder in Q${q} gefüllt. Jetzt einzeln anpassen.` : 'Keine leeren Felder mit berechneter Note gefunden.', 4000); return; }
   if (t.id === 'chkNachschreiber') { c.checklist.nachschreiberOk = t.checked; sync.mark(); renderView(); return; }
   if (t.id === 'addKind') { if (t.value) { const l = addLesson(c, t.value); state.editLesson = l.id; state.curLesson = l.id; sync.mark(); renderView(); } return; }
   if (t.matches('[data-override]') || t.matches('[data-vornote]')) { const isV = t.matches('[data-vornote]'); const st = c.students.find(s => s.id === (isV ? t.dataset.vornote : t.dataset.override)); if (!st) return;
