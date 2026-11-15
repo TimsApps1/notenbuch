@@ -138,6 +138,8 @@ tbody tr.focus th.sticky-col{background:var(--accent-soft)}
 .dist span{padding:2px 8px;border-radius:999px;font-family:var(--mono)}
 .assess td.val{padding:3px 6px;border-right:1px solid var(--line)}
 .assess input.pts{width:72px;text-align:right;padding:4px 6px;font-family:var(--mono)}
+.assess select.ptsel{width:78px;padding:4px 4px;font-family:var(--mono);font-weight:600;text-align:center}
+html.gross .assess select.ptsel{width:92px;font-size:17px;min-height:44px}
 .assess .cellnote{display:inline-block;min-width:38px;text-align:center;font-family:var(--mono);font-size:12px;margin-left:4px;border-radius:999px;padding:1px 6px}
 .assess thead th.ah{text-align:center;border-right:1px solid var(--line)}
 .item-head{background:none;border:0;padding:3px 6px;color:var(--text);font-weight:600;font-size:12px;border-radius:4px;display:flex;flex-direction:column;align-items:center;line-height:1.2}
@@ -509,7 +511,7 @@ const fmt = (g, d = 2) => g == null ? '–' : g.toFixed(d).replace('.', ',');
 // ---------- Datenmodell ----------
 function defaultSettings(){
   return { hasKA: true, kaWeight: 50, testShare: 25, values: { pp: 1.0, p: 2.0, n: 3.5, m: 5.0, mm: 6.0 }, markedWeight: 1,
-    key: 'fein', fein: [...DEF_FEIN], grob: [...DEF_GROB], minEntries: 6, vornoteWeight: 0, seatCols: 6, boardH: 0, autoKreis: true, bonusMax: 0.75, sammelAnzahl: 5, ampel: DEF_AMPEL() };
+    key: 'fein', fein: [...DEF_FEIN], grob: [...DEF_GROB], eingabeTests: 'punkte', eingabeKA: 'punkte', minEntries: 6, vornoteWeight: 0, seatCols: 6, boardH: 0, autoKreis: true, bonusMax: 0.75, sammelAnzahl: 5, ampel: DEF_AMPEL() };
 }
 function newCourse(name, fach = '', halbjahr = ''){
   return { id: uid(), schema: SCHEMA, name, fach, halbjahr, created: Date.now(), updated: Date.now(), synced: false, archived: false, archivedAt: null,
@@ -520,7 +522,17 @@ function newPlan(name){ return { id: uid(), name, pos: {}, boardH: 0, tileW: 14,
 // notizen: freie Beobachtungen fürs Eltern- oder Zeugnisgespräch, art '+' (positiv), '-' (zu verbessern), 'i' (sonstiges)
 function newStudent(name){ return { id: uid(), name, alias: '', seat: null, vornote: null, override: null, bem: '', vermerk: '', gespraeche: [], notizen: [], na: { zeit: false, rs: false, text: '' } }; }
 function newLesson(kind = 'stunde', date = today()){ return { id: uid(), date, topic: '', kind, ausfall: false, status: 'offen' }; }
-function newItem(name, max = 20){ return { id: uid(), name, date: today(), max, weight: 1, mode: 'punkte', shift: 0, results: {} }; }
+function newItem(name, max = 20, mode = 'punkte'){ return { id: uid(), name, date: today(), max, weight: 1, mode: mode === 'note' ? 'note' : 'punkte', shift: 0, results: {} }; }
+// Auswahl bei direkter Noteneingabe: 1+, 1, 1-, … 5-, 6
+const NOTEN_WAHL = () => [...NP_LABEL, '6'];
+// Eingabeart einer Arbeit wechseln. Punkte → Note: vorhandene Punkte werden in die Tendenznote umgerechnet (z. B. 2,3 → „2-“).
+// Note → Punkte: Noten lassen sich nicht in Punkte zurückrechnen, die Einträge bleiben stehen. Liefert die Zahl umgerechneter Einträge.
+function modusWechsel(c, it, mode){
+  mode = mode === 'note' ? 'note' : 'punkte'; if ((it.mode || 'punkte') === mode) return 0;
+  let n = 0;
+  if (mode === 'note') for (const sid of Object.keys(it.results || {})) { const r = it.results[sid]; if (!r || r.s !== 'p') continue; const g = einzelNote(c, it, sid); if (g == null) continue; r.v = tendenz(g); touchResult(it, sid); n++; }
+  it.mode = mode; return n;
+}
 function parseResultText(r){
   const m = String(r ?? '').trim().match(/^([0-9]+(?:[.,][0-9]+)?|[1-6]\s*[+-]?)\s*([nzNZ]*)$/);
   if (!m) return { value: '', flags: '' };
@@ -984,14 +996,14 @@ return { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS,
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, kursAlterTage, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow, anteile,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, touchMark, touchResult, tomb, pruneStamps, sampleCourse,
   DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs,
-  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer };
+  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel };
 })();
 </script>
 
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'Version 23';
+const APP_VERSION = 'Version 24';
 const KEY = 'notenbuch-sek1-v2';
 const KEY_OLD = 'notenbuch-sek1-v1';
 const STORE_KEY = 'notenbuch-storage-v1';
@@ -1000,7 +1012,7 @@ const { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS, 
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, kursAlterTage, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow, anteile,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, touchMark, touchResult, tomb, pruneStamps, sampleCourse,
   DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs,
-  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer } = window.NB;
+  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel } = window.NB;
 const DEFAULT_DBX_KEY = ''; // Hier kann ein fester Dropbox-App-Key eingetragen werden, dann entfällt die Eingabe für alle Geräte
 const isStandalone = () => window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
 const $ = (s, r = document) => r.querySelector(s);
@@ -1486,6 +1498,9 @@ function resultCell(c, key, it, st){
   const r = getResult(it, st.id); const g = einzelNote(c, it, st.id);
   if (r && r.s === 'nm') return `<td class="val"><button class="nm ${r.g === 'u' ? 'u' : ''}" data-nm-edit="${it.id}:${st.id}" title="Nicht mitgeschrieben – antippen zum Ändern">n. m.${r.g === 'u' ? ' (unentsch.)' : ''}${r.t ? ' · ' + shortDate(r.t) : ''}</button></td>`;
   const val = r ? r.v + (r.f ? ' ' + r.f : '') : '';
+  // Note direkt: Auswahlliste statt Tippfeld (auf dem iPhone hat die Zifferntastatur kein + und −)
+  if (it.mode === 'note') { const wahl = NOTEN_WAHL(); const cur = r ? String(r.v).replace(/\s+/g, '') : ''; const extra = cur && !wahl.includes(cur);
+    return `<td class="val"><select class="ptsel" data-key="${key}" data-tid="${it.id}" data-sid="${st.id}" title="Note wählen"><option value="">–</option>${extra ? `<option value="${esc(cur)}" selected>${esc(cur)}</option>` : ''}${wahl.map(n => `<option value="${n}" ${cur === n ? 'selected' : ''}>${n.replace('-', '−')}</option>`).join('')}<option value="nm">n. m. (nicht mitgeschrieben)</option></select><span class="cellnote ${gClass(g)}">${fmt(g, 1)}${r && r.f ? ' ' + r.f : ''}</span></td>`; }
   return `<td class="val"><input class="pts" inputmode="decimal" data-key="${key}" data-tid="${it.id}" data-sid="${st.id}" value="${esc(val)}" placeholder="${it.mode === 'note' ? 'Note' : 'Pkt.'}" title="${it.mode === 'note' ? 'Note, z. B. 2, 2+, 2- oder 2,3' : 'Erreichte Punkte. Leer = noch nicht eingetragen. Anhang n = nachgeschrieben, z = Zeitverlängerung'}"><span class="cellnote ${gClass(g)}">${fmt(g, 1)}${r && r.f ? ' ' + r.f : ''}</span>${r ? '' : `<button class="small nmbtn" data-nm-set="${it.id}:${st.id}" title="Nicht mitgeschrieben">n. m.</button>`}</td>`;
 }
 function renderAssess(c, key, singular, title){
@@ -1499,7 +1514,7 @@ function renderAssess(c, key, singular, title){
     : `<table class="assess"><thead><tr><th class="sticky-col">Schüler/in</th>${head}<th class="num">Schnitt</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><th class="sticky-col">Kursdurchschnitt</th>${foot}<td></td></tr></tfoot></table>`;
   return `<section class="pane">
     <div class="toolbar"><h2>${title}</h2><div class="spacer"></div><button id="btnAddItem" class="primary" data-key="${key}" data-singular="${singular}">+ ${singular}</button></div>
-    <p class="hint">${share} Drei Zustände pro Kind: Punkte eingetragen, <b>n. m.</b> = nicht mitgeschrieben (zählt nicht, Kind erscheint bei den Nachschreibern), leer = noch nichts eingetragen. Anhang <kbd>n</kbd> = nachgeschrieben, <kbd>z</kbd> = Zeitverlängerung. Spaltenkopf antippen für Schlüssel, Verteilung, Fairness-Check und Vorschläge für Kinder, die gefehlt haben.</p>
+    <p class="hint">${share} Statt Punkten kannst du Noten direkt eingeben (2+, 2, 2− …): Spaltenkopf antippen → Eingabe „Note direkt“. Die App merkt sich das für neue ${key === 'tests' ? 'Tests' : 'Klassenarbeiten'}. Drei Zustände pro Kind: Punkte oder Note eingetragen, <b>n. m.</b> = nicht mitgeschrieben (zählt nicht, Kind erscheint bei den Nachschreibern), leer = noch nichts eingetragen. Anhang <kbd>n</kbd> = nachgeschrieben, <kbd>z</kbd> = Zeitverlängerung. Spaltenkopf antippen für Schlüssel, Verteilung, Fairness-Check und Vorschläge für Kinder, die gefehlt haben.</p>
     ${itemEditor(c, key, singular)}
     <div class="scroll">${table}</div>
   </section>`;
@@ -1879,6 +1894,7 @@ function renderEinstellungen(c){
       </div>
       <div class="card">
         <h3>Notenschlüssel für Tests und Klassenarbeiten</h3>
+        <div class="row"><label>Neue Klassenarbeiten eingeben als<select data-set="settings.eingabeKA"><option value="punkte" ${s.eingabeKA !== 'note' ? 'selected' : ''}>Punkte</option><option value="note" ${s.eingabeKA === 'note' ? 'selected' : ''}>Note direkt (2+, 2, 2−)</option></select></label><label>Neue Tests eingeben als<select data-set="settings.eingabeTests"><option value="punkte" ${s.eingabeTests !== 'note' ? 'selected' : ''}>Punkte</option><option value="note" ${s.eingabeTests === 'note' ? 'selected' : ''}>Note direkt (2+, 2, 2−)</option></select></label></div>
         <div class="row"><label>Schlüssel<select data-set="settings.key"><option value="fein" ${s.key === 'fein' ? 'selected' : ''}>Feinschlüssel (15 Notenpunkte, Tendenznoten)</option><option value="grob" ${s.key === 'grob' ? 'selected' : ''}>Grobschlüssel (ganze Noten)</option></select></label></div>
         ${s.key === 'fein'
           ? `<p class="hint">Mindestprozent je Notenpunkt (15 = 1+ … 1 = 5–, darunter 6):</p><div class="thresholds">${s.fein.map((t, i) => `<label>${NP_LABEL[i]}<input type="number" data-set="settings.fein.${i}" value="${t}" min="0" max="100" step="1"></label>`).join('')}</div>`
@@ -2286,7 +2302,7 @@ view.addEventListener('click', async e => {
     case 'btnPlanRename': { const plan = currentPlan(c, curLesson(c)); const name = await ask('Neuer Name für diesen Sitzplan:', { input: plan.name, okLabel: 'Speichern' }); if (!name || !name.trim()) return; plan.name = name.trim(); sync.mark(); renderView(); break; }
     case 'btnPlanDelete': { const plan = currentPlan(c, curLesson(c)); if (c.plans.length < 2) return; if (!await confirmA(`Sitzplan „${plan.name}“ löschen? Die Stempel und Noten bleiben erhalten.`)) return; c.plans = c.plans.filter(p => p.id !== plan.id); tomb(c, 'plans', plan.id); c.schedule.forEach(e => { if (e.plan === plan.id) delete e.plan; }); state.planSel = null; sync.mark(); renderView(); break; }
     case 'btnReasonMode': state.reasonMode = !state.reasonMode; persistLocal(); btn.classList.toggle('on', state.reasonMode); break;
-    case 'btnAddItem': { const key = btn.dataset.key; const it = newItem(`${btn.dataset.singular} ${c[key].length + 1}`, key === 'tests' ? 20 : 40); c[key].push(it); state.editItem = it.id; sync.mark(); renderView(); break; }
+    case 'btnAddItem': { const key = btn.dataset.key; const it = newItem(`${btn.dataset.singular} ${c[key].length + 1}`, key === 'tests' ? 20 : 40, key === 'tests' ? c.settings.eingabeTests : c.settings.eingabeKA); c[key].push(it); state.editItem = it.id; sync.mark(); renderView(); break; }
     case 'btnDeleteItem': { const key = state.tab === 'ka' ? 'klassenarbeiten' : 'tests'; const it = c[key].find(x => x.id === state.editItem); if (it && await confirmA(`„${it.name}“ mit allen Ergebnissen löschen?`)) { undoPush(c, `${it.name} löschen`); c[key] = c[key].filter(x => x.id !== it.id); tomb(c, key, it.id); state.editItem = null; sync.mark(); renderView(); } break; }
     case 'btnCloseItem': state.editItem = null; renderView(); break;
     case 'btnFairShift': { const key = state.tab === 'ka' ? 'klassenarbeiten' : 'tests'; const it = c[key].find(x => x.id === state.editItem); if (it) { it.shift = (+it.shift || 0) + (+btn.dataset.shift); sync.mark(); renderView(); } break; }
@@ -2366,7 +2382,19 @@ view.addEventListener('change', async e => {
   if (t.id === 'planSel') { const bc = boardCourse(); state.planSel = { cid: bc.id, lid: curLesson(bc)?.id || null, pid: t.value }; persistLocal(); renderView(); return; }
   if (c.archived) return;
   if (t.matches('[data-sched-plan]')) { const e2 = c.schedule.find(x => +x.wd === +t.dataset.schedPlan); if (e2) { e2.plan = t.value; sync.mark(); } return; }
-  if (t.id === 'itemMode') { const key = state.tab === 'ka' ? 'klassenarbeiten' : 'tests'; const it = c[key].find(x => x.id === state.editItem); if (it) { it.mode = t.value; sync.mark(); renderView(); } return; }
+  if (t.id === 'itemMode') { const key = state.tab === 'ka' ? 'klassenarbeiten' : 'tests'; const it = c[key].find(x => x.id === state.editItem); if (it) {
+      undoPush(c, 'Eingabeart ändern'); const hatte = Object.values(it.results || {}).some(r => r && r.s === 'p'); const n = modusWechsel(c, it, t.value);
+      c.settings[key === 'tests' ? 'eingabeTests' : 'eingabeKA'] = it.mode; sync.mark(); renderView();
+      toast(it.mode === 'note' ? `Note direkt: einfach 2+, 2, 2− wählen.${n ? ` ${n} Punktwerte wurden in Noten umgerechnet.` : ''} Gilt auch für neue ${key === 'tests' ? 'Tests' : 'Klassenarbeiten'}.` : `Eingabe in Punkten.${hatte ? ' Vorhandene Noten bitte durch Punkte ersetzen oder mit „↶“ zurück.' : ''}`, 5000); } return; }
+  // Note direkt: Auswahl in der Zelle
+  if (t.matches('select.ptsel')) { if (guardArchived(c)) return; const it = c[t.dataset.key].find(x => x.id === t.dataset.tid); if (!it) return; const sid = t.dataset.sid;
+    if (t.value === 'nm') { setNm(c, it.id, sid, {}); renderView(); const el = $(`[data-nm-edit="${it.id}:${sid}"]`); if (el) showNmPopover(el, it.id, sid); return; }
+    const alt = getResult(it, sid); undoPush(c, 'Note eintragen');
+    if (t.value) it.results[sid] = { s: 'p', v: t.value, f: alt && alt.s === 'p' ? (alt.f || '') : '' }; else delete it.results[sid]; touchResult(it, sid);
+    const g = einzelNote(c, it, sid); const sp = t.nextElementSibling; if (sp) { const f = (it.results[sid] || {}).f; sp.textContent = fmt(g, 1) + (f ? ' ' + f : ''); sp.className = 'cellnote ' + gClass(g); }
+    const rs = $(`td[data-asum="${sid}"]`); if (rs) rs.innerHTML = assessSum(c, t.dataset.key, sid);
+    const av = $(`td[data-avg="${it.id}"]`); if (av) av.innerHTML = assessAvg(c, it);
+    sync.mark(); return; }
   if (t.id === 'itemShift' || t.id === 'itemMax' || t.id === 'itemDate') { renderView(); return; }
   if (t.id === 'lessonKind' || t.id === 'lessonAusfall' || t.id === 'lessonW') { const l = c.lessons.find(x => x.id === state.editLesson); if (!l) return; if (t.id === 'lessonKind') l.kind = t.value; else if (t.id === 'lessonW') { undoPush(c, 'Spaltengewicht ändern'); const w = +t.value; if (w === 1) delete l.w; else l.w = w; } else l.ausfall = t.checked; sync.mark(); renderView(); return; }
   if (t.matches('[data-sched-dauer]')) { const e2 = c.schedule.find(x => +x.wd === +t.dataset.schedDauer); if (e2) { e2.dauer = t.checked ? 2 : 1; sync.mark(); } return; }
