@@ -156,6 +156,10 @@ html.gross .assess select.ptsel{width:92px;font-size:17px;min-height:44px}
 .trend.up{color:var(--pp)} .trend.down{color:var(--m)}
 .ov input.override{width:60px;text-align:center;font-family:var(--mono);font-weight:700;padding:4px}
 .ov input.bem{width:200px}
+/* Zeitraum-Umschalter und Quartalsgrenze in der Tabelle */
+.toolbar.zeitraum{gap:6px;align-items:center} .toolbar.zeitraum .toggle small{font-weight:400;opacity:.75;margin-left:2px} .toolbar.zeitraum #btnQuartalNeu{margin-left:8px}
+th.lh.qstart,td.cell.qstart{border-left:3px solid var(--accent)} th.lh{position:relative} .qtag{position:absolute;left:2px;top:1px;font-size:9px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:0 3px;z-index:1;pointer-events:none}
+th.sum small.zt{display:block;font-weight:400;font-size:10px;color:var(--accent)}
 /* Quartalsnoten Q1–Q4: selbst festgelegt */
 .ov select.qsel{width:62px;padding:4px 2px;font-family:var(--mono);font-weight:700;text-align:center;color:var(--muted)} .ov select.qsel.gesetzt{color:var(--text);border-color:var(--accent)} .ov th.qh{text-align:center}
 html.gross .ov select.qsel{width:76px;font-size:17px;min-height:44px}
@@ -524,7 +528,7 @@ function defaultSettings(){
 function newCourse(name, fach = '', halbjahr = ''){
   return { id: uid(), schema: SCHEMA, name, fach, halbjahr, created: Date.now(), updated: Date.now(), synced: false, archived: false, archivedAt: null,
     settings: defaultSettings(), kinds: DEF_KINDS(), criteria: DEF_CRIT(), schedule: [], students: [], lessons: [], marks: {}, reasons: {}, tests: [], klassenarbeiten: [],
-    plans: [newPlan('Sitzplan 1')], ferien: DEF_FERIEN(), checklist: { nachschreiberOk: false, spiegelSeen: false } };
+    plans: [newPlan('Sitzplan 1')], ferien: DEF_FERIEN(), checklist: { nachschreiberOk: false, spiegelSeen: false }, quartale: {}, qErstes: 1 };
 }
 function newPlan(name){ return { id: uid(), name, pos: {}, boardH: 0, tileW: 14, boardW: 100 }; }
 // notizen: freie Beobachtungen fürs Eltern- oder Zeugnisgespräch, art '+' (positiv), '-' (zu verbessern), 'i' (sonstiges)
@@ -534,8 +538,29 @@ function newLesson(kind = 'stunde', date = today()){ return { id: uid(), date, t
 function newItem(name, max = 20, mode = 'punkte'){ return { id: uid(), name, date: today(), max, weight: 1, mode: mode === 'note' ? 'note' : 'punkte', shift: 0, results: {} }; }
 // Auswahl bei direkter Noteneingabe: 1+, 1, 1-, … 5-, 6
 const NOTEN_WAHL = () => [...NP_LABEL, '6'];
+// ---------- Quartale ----------
+// c.qErstes = Nummer des ersten Quartals im Kurs (1, im 2. Halbjahr 3). c.quartale = { '2': '2026-11-18' }: ab diesem Tag zählt alles zum genannten Quartal.
+// Ein Quartal reicht von seinem Beginn (einschließlich) bis zum Beginn des nächsten (ausschließlich). Ohne Einträge gibt es nur ein Quartal = ganzer Kurs.
+function quartalListe(c){
+  const erst = +c.qErstes || 1;
+  const out = [{ q: erst, von: '' }];
+  Object.entries(c.quartale || {}).map(([q, ab]) => ({ q: +q, von: ab })).filter(x => x.von && x.q > erst && x.q <= 4).sort((a, b) => a.q - b.q).forEach(x => { if (x.von > out[out.length - 1].von) out.push(x); });
+  out.forEach((x, i) => { x.bis = i + 1 < out.length ? out[i + 1].von : ''; });
+  return out;
+}
+function quartalVon(c, iso){ let r = null; for (const x of quartalListe(c)) if (!x.von || iso >= x.von) r = x; return r.q; }
+function quartalAktuell(c){ return quartalVon(c, today()); }
+function quartalNaechstes(c){ const l = quartalListe(c); const n = l[l.length - 1].q + 1; return n <= 4 ? n : null; }
+// Sicht auf den Kurs, die nur Stunden, Tests und Arbeiten eines Quartals enthält. Schüler, Stempel und Einstellungen sind dieselben Objekte;
+// alle Rechenfunktionen liefern damit die Werte dieses Quartals. Nur zum Rechnen und Anzeigen, nie speichern.
+function zeitraumKurs(c, q){
+  const z = quartalListe(c).find(x => x.q === +q); if (!z || (!z.von && !z.bis)) return c;
+  const drin = d => (!z.von || (d || '') >= z.von) && (!z.bis || (d || '') < z.bis);
+  return Object.assign({}, c, { lessons: c.lessons.filter(l => drin(l.date)), tests: c.tests.filter(t => drin(t.date)), klassenarbeiten: c.klassenarbeiten.filter(t => drin(t.date)), zeitraum: { q: z.q, von: z.von, bis: z.bis } });
+}
 // Leere Quartalsfelder eines Quartals mit der berechneten Tendenznote vorbelegen (als Ausgangspunkt zum Anpassen). Liefert die Anzahl.
-function quartalVorbelegen(c, q){ let n = 0; for (const st of c.students) { st.quartal ||= {}; if (st.quartal[q]) continue; const g = gesamt(c, st); if (g.basis == null) continue; st.quartal[q] = tendenz(g.basis); n++; } return n; }
+// Ist das Quartal im Kurs abgegrenzt, zählt nur dessen Zeitraum, sonst der ganze Kurs.
+function quartalVorbelegen(c, q){ const cz = zeitraumKurs(c, q); let n = 0; for (const st of c.students) { st.quartal ||= {}; if (st.quartal[q]) continue; const g = gesamt(cz, st); if (g.basis == null) continue; st.quartal[q] = tendenz(g.basis); n++; } return n; }
 // Eingabeart einer Arbeit wechseln. Punkte → Note: vorhandene Punkte werden in die Tendenznote umgerechnet (z. B. 2,3 → „2-“).
 // Note → Punkte: Noten lassen sich nicht in Punkte zurückrechnen, die Einträge bleiben stehen. Liefert die Zahl umgerechneter Einträge.
 function modusWechsel(c, it, mode){
@@ -573,6 +598,7 @@ function migrate(c){
   c.schedule ||= []; c.students ||= []; c.lessons ||= []; c.marks ||= {}; c.reasons ||= {}; c.tests ||= []; c.klassenarbeiten ||= [];
   c.checklist = Object.assign({ nachschreiberOk: false, spiegelSeen: false }, c.checklist || {});
   c.archived = !!c.archived; c.archivedAt ||= null;
+  if (!c.quartale || typeof c.quartale !== 'object' || Array.isArray(c.quartale)) c.quartale = {}; c.qErstes = +c.qErstes === 3 ? 3 : 1;
   c.students.forEach(s => { s.alias ??= ''; s.seat ??= null; s.vornote ??= null; s.override ??= null; s.bem ??= ''; s.vermerk ??= ''; if (!Array.isArray(s.gespraeche)) s.gespraeche = []; if (!Array.isArray(s.notizen)) s.notizen = []; if (!s.quartal || typeof s.quartal !== 'object' || Array.isArray(s.quartal)) s.quartal = {}; s.na = Object.assign({ zeit: false, rs: false, text: '' }, s.na || {}); });
   if (!Array.isArray(c.ferien)) c.ferien = DEF_FERIEN();
   // Sitzpläne: alte Einzelpositionen (st.pos) wandern in den ersten Plan
@@ -898,9 +924,9 @@ function wiedervorlagen(courses){
   for (const c of courses) { if (c.archived) continue; for (const st of c.students) for (const g of (st.gespraeche || [])) if (g.wv && !g.erl && g.wv <= bis) out.push({ c, st, g }); }
   return out.sort((a, b) => a.g.wv.localeCompare(b.g.wv));
 }
-function kriterienKurs(c){ const rc = {}; for (const sid of Object.keys(c.reasons || {})) for (const lid of Object.keys(c.reasons[sid])) { const r = c.reasons[sid][lid]; if (r) rc[r] = (rc[r] || 0) + 1; } return Object.entries(rc).sort((a, b) => b[1] - a[1]); }
+function kriterienKurs(c){ const rc = {}; const ids = new Set(c.lessons.map(l => l.id)); for (const sid of Object.keys(c.reasons || {})) for (const lid of Object.keys(c.reasons[sid])) { if (!ids.has(lid)) continue; const r = c.reasons[sid][lid]; if (r) rc[r] = (rc[r] || 0) + 1; } return Object.entries(rc).sort((a, b) => b[1] - a[1]); }
 // ---------- Zusammenführung zwischen Geräten ----------
-const KURS_FELDER = ['name','fach','halbjahr','settings','kinds','criteria','schedule','checklist','archived','archivedAt','ferien'];
+const KURS_FELDER = ['name','fach','halbjahr','settings','kinds','criteria','schedule','checklist','archived','archivedAt','ferien','quartale','qErstes'];
 // Vor dem Hochladen: welche Teile haben sich seit dem letzten Abgleich (base) geändert? Bekommt einen Zeitstempel u.
 function stampChanges(c, base){
   const now = c.updated || Date.now(); const j = JSON.stringify;
@@ -1007,14 +1033,14 @@ return { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS,
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, kursAlterTage, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow, anteile,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, touchMark, touchResult, tomb, pruneStamps, sampleCourse,
   DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs,
-  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel, quartalVorbelegen };
+  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel, quartalVorbelegen, quartalListe, quartalVon, quartalAktuell, quartalNaechstes, zeitraumKurs };
 })();
 </script>
 
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'Version 26';
+const APP_VERSION = 'Version 27';
 const KEY = 'notenbuch-sek1-v2';
 const KEY_OLD = 'notenbuch-sek1-v1';
 const STORE_KEY = 'notenbuch-storage-v1';
@@ -1023,7 +1049,12 @@ const { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS, 
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, kursAlterTage, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow, anteile,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, touchMark, touchResult, tomb, pruneStamps, sampleCourse,
   DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs,
-  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel, quartalVorbelegen } = window.NB;
+  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel, quartalVorbelegen, quartalListe, quartalVon, quartalAktuell, quartalNaechstes, zeitraumKurs } = window.NB;
+// Zeitraum, nach dem gerechnet und angezeigt wird (je Kurs und Gerät): 'q2' = ein Quartal, 'alle' = ganzer Kurs.
+// Voreinstellung: das laufende Quartal, sobald der Kurs Quartale hat; sonst der ganze Kurs.
+function zeitraumWahl(c){ const l = quartalListe(c); if (l.length < 2) return 'alle'; const w = (state.zeitraum || {})[c.id]; if (w === 'alle' || l.some(x => 'q' + x.q === w)) return w; return 'q' + quartalAktuell(c); }
+function sicht(c){ const w = zeitraumWahl(c); return w === 'alle' ? c : zeitraumKurs(c, +w.slice(1)); }
+function zeitraumText(c){ const w = zeitraumWahl(c); if (quartalListe(c).length < 2) return ''; return w === 'alle' ? 'gesamter Kurs' : `${w.slice(1)}. Quartal`; }
 const DEFAULT_DBX_KEY = ''; // Hier kann ein fester Dropbox-App-Key eingetragen werden, dann entfällt die Eingabe für alle Geräte
 const isStandalone = () => window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
 const $ = (s, r = document) => r.querySelector(s);
@@ -1275,7 +1306,7 @@ function renderView(){
   document.body.classList.toggle('review', !!state.review);
   let html = '';
   if (state.review && byId(state.review.cid)) { $('#view').innerHTML = renderReview(byId(state.review.cid)); return; }
-  if (state.sprechtag && c.students.find(s => s.id === state.sprechtag)) { $('#view').innerHTML = renderSprechtag(c, c.students.find(s => s.id === state.sprechtag)); return; }
+  if (state.sprechtag && c.students.find(s => s.id === state.sprechtag)) { $('#view').innerHTML = renderSprechtag(sicht(c), c.students.find(s => s.id === state.sprechtag)); return; }
   const banner = state.tab === 'start' ? '' : c.archived ? `<div class="banner"><span>📁 <b>Archiviert</b>${c.archivedAt ? ' am ' + longDate(c.archivedAt) : ''}. Dieser Kurs kann nur noch gelesen werden.</span><button class="small" id="btnUnarchive" data-ro="1">Bearbeitung wieder freigeben</button></div>`
     : c.isExample ? `<div class="banner"><span><b>Beispielkurs</b> mit erfundenen Kürzeln zum Ausprobieren. Eigene Klasse: oben „+ Kurs“, dann Schüler eintragen.</span><button class="small" id="btnDeleteExample">Beispielkurs löschen</button></div>` : '';
   switch (state.tab) {
@@ -1283,8 +1314,9 @@ function renderView(){
     case 'mitarbeit': html = state.viewMode === 'kacheln' ? renderKacheln(c) : renderMitarbeit(c); break;
     case 'tests': html = renderAssess(c, 'tests', 'Test', 'Tests (schriftliche Übungen)'); break;
     case 'ka': html = renderAssess(c, 'klassenarbeiten', 'Klassenarbeit', 'Klassenarbeiten'); break;
-    case 'stand': html = renderStand(c); break;
-    case 'uebersicht': html = state.detail && c.students.find(s => s.id === state.detail) ? renderDetail(c, c.students.find(s => s.id === state.detail)) : renderUebersicht(c); break;
+    // Stand, Übersicht und Kindseite rechnen mit dem gewählten Zeitraum (Quartal oder gesamter Kurs)
+    case 'stand': html = renderStand(sicht(c)); break;
+    case 'uebersicht': html = state.detail && c.students.find(s => s.id === state.detail) ? renderDetail(sicht(c), c.students.find(s => s.id === state.detail)) : renderUebersicht(sicht(c)); break;
     case 'checkliste': html = renderCheckliste(c); break;
     case 'schueler': html = renderSchueler(c); break;
     case 'einstellungen': html = renderEinstellungen(c); break;
@@ -1342,6 +1374,16 @@ function sammelHtml(c, l){
   const names = s.ids.map(id => c.students.find(x => x.id === id)).filter(Boolean).map(st => `<button class="small" data-focus="${st.id}">${esc(st.name)}</button>`).join(' ');
   return `<div class="wide sammel"><b>Heute einsammeln:</b> ${names} <button class="small" id="btnSammelnWeg" title="Auswahl ausblenden">✕</button></div>`;
 }
+// Zeitraum-Umschalter: Q1 | Q2 | Gesamt, dazu der Knopf, mit dem ein neues Quartal beginnt.
+// kompakt = in der Noteneingabe nur zeigen, wenn es schon Quartale gibt.
+function zeitraumBar(cc, kompakt){
+  const c = byId(cc.id) || cc; const l = quartalListe(c); const w = zeitraumWahl(c); const next = quartalNaechstes(c);
+  const btn = next && !c.archived && !kompakt ? `<button class="small" id="btnQuartalNeu" title="Ab einem Stichtag zählen neue Stunden, Tests und Arbeiten zum ${next}. Quartal">${next}. Quartal beginnen …</button>` : '';
+  if (l.length < 2) return kompakt ? '' : `<div class="toolbar zeitraum no-print"><span class="flag">Zeitraum: gesamter Kurs, noch keine Quartalsgrenze.</span>${btn}</div>`;
+  const seg = l.map(z => `<button class="small toggle ${w === 'q' + z.q ? 'on' : ''}" data-zeitraum="q${z.q}" data-ro="1" title="${z.von ? 'ab ' + esc(longDate(z.von)) : 'vom Kursbeginn'}${z.bis ? ' bis vor ' + esc(longDate(z.bis)) : ''}">Q${z.q}${z.von ? ` <small>ab ${shortDate(z.von)}</small>` : ''}</button>`).join('')
+    + `<button class="small toggle ${w === 'alle' ? 'on' : ''}" data-zeitraum="alle" data-ro="1" title="Alle Quartale zusammen. Grundlage der Zeugnisnote.">Gesamt</button>`;
+  return `<div class="toolbar zeitraum no-print"><span class="tb-label">Noten für</span>${seg}${btn}</div>`;
+}
 // Rückgängig direkt in der Noteneingabe (Tabelle und Sitzplan); die Zahl zeigt, wie viele Schritte zurückgehen
 function undoBar(){ const n = undoStack.length; return `<button class="small undo" id="btnUndoBar" ${n ? '' : 'disabled'} title="${n ? 'Rückgängig: ' + esc(undoStack[n - 1].label) : 'Nichts rückgängig zu machen'}">↶ Rückgängig<span id="undoCount">${n ? ' ' + n : ''}</span></button>`; }
 // Hinweis, wenn in eine alte oder abgeschlossene Stunde eingetragen wird
@@ -1362,19 +1404,23 @@ function renderMitarbeit(c){
   const open = openLessons(c).length;
   // jüngste offene Stunde bis heute, die zählt (kein Ausfall): direkt abschließbar
   const lo = c.lessons.filter(l => l.status !== 'abgeschlossen' && !l.ausfall && l.date <= today()).sort((a, b) => b.date.localeCompare(a.date))[0];
-  const head = c.lessons.map(l => `<th class="lh ${l.ausfall ? 'ausfall' : ''} ${l.status !== 'abgeschlossen' ? 'offen' : ''}"><button class="lesson-head ${l.id === state.editLesson ? 'editing' : ''}" data-edit-lesson="${l.id}" title="${esc(longDate(l.date))} · ${esc(kindOf(c, l).name)}${l.topic ? ' – ' + esc(l.topic) : ''}${l.status !== 'abgeschlossen' ? ' · noch offen' : ''} (antippen zum Bearbeiten)">${lessonHead(c, l)}</button></th>`).join('');
+  // erste Spalte jedes weiteren Quartals markieren
+  const qStart = new Map(); for (const z of quartalListe(c)) if (z.von) { const l0 = c.lessons.filter(x => x.date >= z.von && (!z.bis || x.date < z.bis)).sort((a, b) => a.date.localeCompare(b.date))[0]; if (l0) qStart.set(l0.id, z.q); }
+  const zt = zeitraumText(c);
+  const head = c.lessons.map(l => `<th class="lh ${l.ausfall ? 'ausfall' : ''} ${l.status !== 'abgeschlossen' ? 'offen' : ''} ${qStart.has(l.id) ? 'qstart' : ''}">${qStart.has(l.id) ? `<span class="qtag" title="Ab hier ${qStart.get(l.id)}. Quartal">Q${qStart.get(l.id)}</span>` : ''}<button class="lesson-head ${l.id === state.editLesson ? 'editing' : ''}" data-edit-lesson="${l.id}" title="${esc(longDate(l.date))} · ${esc(kindOf(c, l).name)}${l.topic ? ' – ' + esc(l.topic) : ''}${l.status !== 'abgeschlossen' ? ' · noch offen' : ''} (antippen zum Bearbeiten)">${lessonHead(c, l)}</button></th>`).join('');
   const focus = new Set(focusStudents(c).map(s => s.id));
   const rows = c.students.map((st, r) => {
     const row = c.marks[st.id] || {}, rs = c.reasons[st.id] || {};
-    const cells = c.lessons.map((l, ci) => { const m = row[l.id] || ''; return `<td class="cell m-${MARK_CLS[m]} ${rs[l.id] ? 'hasreason' : ''} ${l.ausfall ? 'ausfall' : ''} ${l.status !== 'abgeschlossen' ? 'offen' : ''}" tabindex="0" data-sid="${st.id}" data-lid="${l.id}" data-r="${r}" data-c="${ci}" title="${esc(rs[l.id] || '')}">${MARK_LABEL[m]}</td>`; }).join('');
+    const cells = c.lessons.map((l, ci) => { const m = row[l.id] || ''; return `<td class="cell m-${MARK_CLS[m]} ${rs[l.id] ? 'hasreason' : ''} ${l.ausfall ? 'ausfall' : ''} ${l.status !== 'abgeschlossen' ? 'offen' : ''}${qStart.has(l.id) ? ' qstart' : ''}" tabindex="0" data-sid="${st.id}" data-lid="${l.id}" data-r="${r}" data-c="${ci}" title="${esc(rs[l.id] || '')}">${MARK_LABEL[m]}</td>`; }).join('');
     const sm = state.sammel && state.sammel.cid === c.id && state.sammel.lid === state.editLesson && state.sammel.ids.includes(st.id);
     return `<tr id="row-${st.id}" class="${focus.has(st.id) ? 'focus' : ''} ${sm ? 'sammel' : ''}"><th class="sticky-col" title="${esc(st.name)}">${sm ? '🎲 ' : ''}${esc(st.name)}</th>${cells}<td class="sum" data-sum="${st.id}">${sumCell(c, st.id)}</td></tr>`;
   }).join('');
   const table = !c.students.length ? `<div class="empty">Noch keine Schüler im Kurs. Trage sie unter „Schüler“ ein.</div>`
     : !c.lessons.length ? `<div class="empty">Noch keine Stunden. Tippe auf „+ Stunde“ oder hinterlege in den Einstellungen deinen Stundenplan.</div>`
-    : `<table class="grid"><thead><tr><th class="sticky-col">Schüler/in</th>${head}<th class="sum">Mitarbeit</th></tr></thead><tbody>${rows}</tbody></table>`;
+    : `<table class="grid"><thead><tr><th class="sticky-col">Schüler/in</th>${head}<th class="sum">Mitarbeit${zt ? `<small class="zt">${zt}</small>` : ''}</th></tr></thead><tbody>${rows}</tbody></table>`;
   return `<section class="pane">
     <div class="toolbar">${stampBar()}${undoBar()}<div class="spacer"></div>${viewToggle()}${micButton()}${addBar(c)}</div>
+    ${zeitraumBar(c, true)}
     <div class="toolbar">${focusBar(c)}<div class="spacer"></div>${lo ? `<button class="small primary" data-lesson-status="${lo.id}" title="Alle ohne Eintrag bekommen den Kreis ○">✓ Stunde vom ${weekday(lo.date)} ${shortDate(lo.date)} abschließen</button>` : ''}${open ? `<button class="small" data-review-course="${c.id}">${open} offene Stunde${open > 1 ? 'n' : ''} durchsehen</button>` : '<span class="flag">Alle Stunden abgeschlossen</span>'}<span class="flag">${c.lessons.length} Spalten · ${c.students.length} Schüler</span></div>
     <p class="hint">Stempel wählen, dann Zellen antippen (nochmal antippen löscht). Graue Spalten sind noch offen und zählen nicht, bis du sie abschließt: mit dem Knopf oben für die jüngste offene Stunde, oder Spaltenkopf antippen → „Stunde abschließen“ bzw. „Wieder öffnen“. Abgeschlossene Stunden ohne Eintrag zählen als <b>${fmt(c.settings.values.n, 1)}</b>. <span class="desk">Tastatur: <kbd>+</kbd> <kbd>-</kbd> (doppelt für ++ / ––), <kbd>o</kbd>, <kbd>F</kbd>, <kbd>Entf</kbd>, Pfeiltasten.</span></p>
     ${lessonEditor(c)}
@@ -1410,10 +1456,11 @@ function fromDisplay(p, W, H, tw, th){ return toDisplay(p, W, H, tw, th); }
 function zoomBar(){ return `<span class="flag">Zoom</span><button class="small" data-zoom="-0.3" data-ro="1" title="Kleiner">−</button><button class="small" data-zoom="0.3" data-ro="1" title="Größer">+</button><button class="small" id="btnFit" data-ro="1" title="Ganze Klasse ins Fenster einpassen">Einpassen</button><button class="small toggle" id="btnPersp" data-ro="1" title="Blickrichtung wechseln">${teacherView() ? 'Blick: vom Pult' : 'Blick: aus der Klasse'}</button>`; }
 function boardHtml(c, l, edit, absentMode){
   const focus = new Set(focusStudents(c).map(s => s.id)); const plan = currentPlan(c, l);
+  const cz = sicht(c); // Note und Pfeil auf der Kachel gelten für den gewählten Zeitraum
   const W = boardW(plan), H = boardHeight(c, plan); const tw = tileW(plan), thU = tileH(plan);
   const pw = v => (v / W * 100).toFixed(3), ph = v => (v / H * 100).toFixed(3);
   const sammel = new Set(state.sammel && state.sammel.cid === c.id && l && state.sammel.lid === l.id ? state.sammel.ids : []);
-  const tiles = seatOrder(c).map((st, i) => { const m = l ? ((c.marks[st.id] || {})[l.id] || '') : ''; const r = l ? ((c.reasons[st.id] || {})[l.id] || '') : ''; const g = mitarbeit(c, st.id).note; const p = toDisplay(plan.pos[st.id] || defaultPos(c, i, plan), W, H, tw, thU); const ar = arrow(tendenz4(c, st).delta);
+  const tiles = seatOrder(c).map((st, i) => { const m = l ? ((c.marks[st.id] || {})[l.id] || '') : ''; const r = l ? ((c.reasons[st.id] || {})[l.id] || '') : ''; const g = mitarbeit(cz, st.id).note; const p = toDisplay(plan.pos[st.id] || defaultPos(c, i, plan), W, H, tw, thU); const ar = arrow(tendenz4(cz, st).delta);
     return `<div class="tile m-${MARK_CLS[m]} ${focus.has(st.id) ? 'focus' : ''} ${sammel.has(st.id) ? 'sammel' : ''} ${r ? 'hasreason' : ''} ${m === 'F' ? 'absent' : ''}" data-tile="${st.id}" title="${esc(st.name)}${r ? ' – ' + esc(r) : ''} · ${esc(ar.text)}" style="left:${pw(p.x)}%;top:${ph(p.y)}%;width:${pw(tw)}%;height:${ph(thU)}%"><span class="tn">${esc(st.name)} <span class="trend ${ar.cls}">${ar.sym}</span></span><span class="tm">${absentMode ? (m === 'F' ? 'F' : '') : MARK_LABEL[m]}</span><span class="tg">${absentMode ? (m === 'F' ? 'fehlt' : 'da') : fmt(g, 1)}</span></div>`; }).join('');
   const grid = edit ? `background-size:${(500 / W).toFixed(3)}% ${(500 / H).toFixed(3)}%;` : '';
   return `<div class="boardwrap" id="boardwrap"><div class="board ${edit ? 'edit' : ''} ${teacherView() ? 'lehrer' : ''}" id="board" data-plan="${plan.id}" data-tw="${tw}" data-th="${thU}" data-bw="${W}" style="width:${(boardZoom() * W).toFixed(0)}%;aspect-ratio:${W}/${H};${grid}"><div class="tafel">${teacherView() ? 'Tafel · hier stehst du' : 'Tafel'}${c.plans.length > 1 ? ' · ' + esc(plan.name) : ''}</div>${tiles}</div></div>`;
@@ -1425,6 +1472,7 @@ function renderKacheln(c){
   return `<section class="pane">
     <div class="toolbar">${state.seatEdit ? stampBar() : gestenBar()}${undoBar()}<div class="spacer"></div>${viewToggle()}${micButton()}${addBar(c)}</div>
     ${altWarn(c, l)}
+    ${zeitraumBar(c, true)}
     <div class="toolbar"><label>Spalte ${sel}</label>${planBar(c, l, state.seatEdit)}${l && !l.ausfall ? (l.status !== 'abgeschlossen' ? `<button class="small primary" data-lesson-status="${l.id}" title="Alle ohne Eintrag bekommen den Kreis ○">✓ Stunde abschließen</button><button class="small" data-review-lesson="${c.id}:${l.id}" title="Schritt für Schritt: Fehlende, dann Stempel">Durchsehen</button>` : `<button class="small" data-lesson-status="${l.id}">Stunde wieder öffnen</button>`) : ''}${focusBar(c)}<div class="spacer"></div>${zoomBar()}<button class="small toggle ${state.seatEdit ? 'on' : ''}" id="btnSeatEdit">${state.seatEdit ? 'Sitzplan fertig' : 'Sitzplan bearbeiten'}</button>${editTools}</div>
     ${state.seatEdit ? '<p class="hint">Kacheln mit Maus oder Finger dorthin ziehen, wo die Tische stehen. Blick vom Pult: Du stehst unten an der Tafel und schaust in die Klasse. Mehrere Sitzpläne (z. B. Kursraum und Klassenraum) legst du mit „+ Sitzplan“ an; im Stundenplan unter Einstellungen kannst du je Wochentag den passenden Plan wählen. <span class="desk">Leere Fläche ziehen verschiebt, Strg + Mausrad zoomt.</span> „Raum breiter“ und „Höhe“ vergrößern den Raum, „Tische“ ändert die Tischgröße. Für 4 + Gang + 4: Raum breiter machen, dann die Tische mit Lücke in der Mitte anordnen.</p>' : `<p class="hint">Gesten auf der Kachel: ${gestenText()} Den Plan verschiebst du über die freie Fläche zwischen den Tischen. Beim Abschließen bekommen alle ohne Eintrag automatisch den Kreis ○. Stempel zählen zur Stunde, egal in welchem Sitzplan du sie setzt. Pfeil: ↑ besser, → gleich, ↓ schlechter als vor 4 Wochen. Farbiger Rahmen: am längsten ohne Eintrag.</p>`}
     ${lessonEditor(c)}
@@ -1450,7 +1498,7 @@ function renderReview(c){
   </section>`;
 }
 function sumCell(c, sid){
-  const m = mitarbeit(c, sid);
+  const m = mitarbeit(sicht(c), sid); // gewählter Zeitraum
   const parts = []; if (m.cnt.pp) parts.push(m.cnt.pp + '× ++'); if (m.cnt.p) parts.push(m.cnt.p + '× +'); if (m.cnt.o) parts.push(m.cnt.o + '× ○'); if (m.cnt.m) parts.push(m.cnt.m + '× –'); if (m.cnt.mm) parts.push(m.cnt.mm + '× ––'); if (m.cnt.f) parts.push(m.cnt.f + '× F');
   return `<span class="n ${gClass(m.note)}" style="background:none">${fmt(m.note, 1)}</span>${m.note == null ? '' : ` <span class="flag">(${tendenz(m.note)})</span>`}<span class="c">${parts.join(' · ') || 'keine Einträge'}</span>`;
 }
@@ -1468,7 +1516,7 @@ function renderStart(){
   const wizard = steps.every(x => x.ok) ? '' : `<div class="card wide"><h3>Erste Schritte</h3><div class="steps">${steps.map((x, i) => `<div class="step ${x.ok ? 'done' : ''}"><span class="no">${x.ok ? '✓' : i + 1}</span><span class="txt"><b>${x.t}</b><small>${x.s}</small></span>${x.ok || !x.act ? '' : `<button class="primary" data-step="${x.act}">Los</button>`}</div>`).join('')}</div></div>`;
   const wv = wiedervorlagen(state.courses);
   const wvHtml = wv.length ? `<div class="card"><h3>Wiedervorlage (${wv.length})</h3><p class="hint">Vereinbarungen aus Gesprächen, deren Prüftermin ansteht.</p><ul class="list">${wv.map(x => `<li><button class="rowbtn" data-detail-course="${x.c.id}:${x.st.id}"><b>${esc(x.st.name)}</b> · ${shortDate(x.g.wv)}: ${esc(x.g.text.slice(0, 80))}<span class="chev">›</span></button><button class="small" data-erl="${x.c.id}:${x.st.id}:${x.g.date}" title="Als erledigt markieren">✓</button></li>`).join('')}</ul></div>` : '';
-  const cards = active.map(c => { const a = ampelCounts(c); const o = openLessons(c).length; return `<div class="card coursecard"><button class="rowbtn" data-goto="${c.id}:mitarbeit"><b>${esc(c.name)}</b><small>${esc([c.fach, c.halbjahr].filter(Boolean).join(' · '))} · ${c.students.length} Schüler</small></button>
+  const cards = active.map(c => { const a = ampelCounts(sicht(c)); const o = openLessons(c).length; return `<div class="card coursecard"><button class="rowbtn" data-goto="${c.id}:mitarbeit"><b>${esc(c.name)}</b><small>${esc([c.fach, c.halbjahr].filter(Boolean).join(' · '))} · ${c.students.length} Schüler</small></button>
       <div class="row" style="margin:6px 0 0"><button class="small" data-goto="${c.id}:stand"><span class="ampel rot"></span> ${a.rot} rot · <span class="ampel gelb"></span> ${a.gelb} gelb</button>${o ? `<button class="small" data-review-course="${c.id}">${o} offene Stunde${o > 1 ? 'n' : ''}</button>` : ''}<button class="small" data-goto="${c.id}:checkliste">Checkliste</button></div></div>`; }).join('');
   return `<section class="pane">
     <div class="form">
@@ -1570,7 +1618,8 @@ function renderStand(c){
       <td class="flag">${[...x.ampel.gruende, ...x.g.flags.filter(f => !/Beobachtung/.test(f) && (!/nicht mitgeschrieben/.test(f) || !x.ampel.gruende.some(g => /nicht mitgeschrieben/.test(g))))].filter((v, i, a) => a.indexOf(v) === i).join(' · ') || '<span class="ok">alles in Ordnung</span>'}</td>
     </tr>`).join('');
   return `<section class="pane">
-    <div class="toolbar"><h2>Aktueller Stand</h2><span class="ampel rot"></span> ${cnt.rot} rot <span class="ampel gelb"></span> ${cnt.gelb} gelb <span class="ampel gruen"></span> ${cnt.gruen} grün<div class="spacer"></div><input type="search" id="standQuery" data-ro="1" placeholder="Kind suchen …" value="${esc(state.standQuery || '')}" style="width:160px"></div>
+    ${zeitraumBar(c)}
+    <div class="toolbar"><h2>Aktueller Stand${c.zeitraum ? ` · ${c.zeitraum.q}. Quartal` : ''}</h2><span class="ampel rot"></span> ${cnt.rot} rot <span class="ampel gelb"></span> ${cnt.gelb} gelb <span class="ampel gruen"></span> ${cnt.gruen} grün<div class="spacer"></div><input type="search" id="standQuery" data-ro="1" placeholder="Kind suchen …" value="${esc(state.standQuery || '')}" style="width:160px"></div>
     <div class="toolbar"><span class="flag">Sortieren:</span>${sortBtn('name', 'Name')}${sortBtn('note', 'Note')}${sortBtn('tendenz', 'Tendenz')}${sortBtn('ampel', 'Ampel')}</div>
     <p class="hint">Rechnerischer Stand mit allem, was bis heute vorliegt (abgeschlossene Stunden, eingetragene Arbeiten), nach derselben Regel wie die Zeugnisnote. Pfeil: Veränderung gegenüber vor 4 Wochen. Ampel: rot = dringend hinschauen, gelb = im Blick behalten. Kind antippen für die Kindseite.</p>
     <div class="scroll"><table><thead><tr><th class="sortable ${sort === 'ampel' ? 'on' : ''}" data-sort="ampel" title="Nach Ampel sortieren"></th><th class="sticky-col sortable ${sort === 'name' ? 'on' : ''}" data-sort="name" title="Nach Name sortieren">Schüler/in</th><th class="num sortable ${sort === 'note' ? 'on' : ''}" data-sort="note" title="Nach Note sortieren">Note</th><th class="sortable ${sort === 'tendenz' ? 'on' : ''}" data-sort="tendenz" title="Nach Tendenz sortieren">Tendenz</th><th class="num">Beobachtungen</th><th>Hinweise</th></tr></thead><tbody>${list || '<tr><td colspan="6" class="empty">Kein Kind gefunden.</td></tr>'}</tbody></table></div>
@@ -1581,7 +1630,9 @@ function renderStand(c){
 // --- Übersicht ---
 function trendHtml(t){ if (!t) return '<span class="flag">–</span>'; if (t.delta <= -0.2) return `<span class="trend up" title="Erste Hälfte ${fmt(t.a, 1)}, zweite Hälfte ${fmt(t.b, 1)}">↗ ${fmt(-t.delta, 1)}</span>`; if (t.delta >= 0.2) return `<span class="trend down" title="Erste Hälfte ${fmt(t.a, 1)}, zweite Hälfte ${fmt(t.b, 1)}">↘ ${fmt(t.delta, 1)}</span>`; return '<span class="trend">→</span>'; }
 function renderUebersicht(c){
-  const s = c.settings; const showVor = s.vornoteWeight > 0 || c.students.some(st => st.vornote != null);
+  // In der Quartalssicht gibt es keinen Zeugnisvorschlag: Zeugnisnote, Vornote und Jahresnote gehören zum gesamten Kurs
+  const qs = c.zeitraum ? c.zeitraum.q : 0;
+  const s = c.settings; const showVor = !qs && (s.vornoteWeight > 0 || c.students.some(st => st.vornote != null));
   let lowCov = 0;
   // Sortierung per Spaltenkopf (Zustand je Gerät): Zahlen aufsteigend = beste Note zuerst, Leeres immer ans Ende
   const us = state.uebSort || { key: 'name', dir: 1 };
@@ -1606,8 +1657,8 @@ function renderUebersicht(c){
       ${showVor ? `<td style="text-align:center"><input class="override" inputmode="numeric" data-vornote="${st.id}" value="${st.vornote ?? ''}" placeholder="–" title="Note des 1. Halbjahres"></td><td class="num">${g.jahr == null ? '<span class="gnull">–</span>' : `<b style="font-family:var(--mono)">${fmt(g.jahr)}</b>`}</td>` : ''}
       <td class="num">${tendenz(g.basis)}</td>
       ${[1, 2, 3, 4].map(q => qSel(st, q)).join('')}
-      <td style="text-align:center">${vorschlag}</td>
-      <td style="text-align:center"><input class="override" inputmode="numeric" data-override="${st.id}" value="${st.override ?? ''}" placeholder="${g.vorschlag ?? '–'}" title="Leer = Vorschlag übernehmen. Eingabe überschreibt die Berechnung."></td>
+      ${qs ? '' : `<td style="text-align:center">${vorschlag}</td>
+      <td style="text-align:center"><input class="override" inputmode="numeric" data-override="${st.id}" value="${st.override ?? ''}" placeholder="${g.vorschlag ?? '–'}" title="Leer = Vorschlag übernehmen. Eingabe überschreibt die Berechnung."></td>`}
       <td><input type="text" class="bem" data-bem="${st.id}" value="${esc(st.bem || '')}" placeholder="Bemerkung"></td>
       <td class="flag">${g.warn ? `<span class="flag warn">${g.warn}</span> ` : ''}${g.flags.join(', ')}</td>
     </tr>`;
@@ -1616,17 +1667,19 @@ function renderUebersicht(c){
   for (const st of c.students) { const z = gesamt(c, st).zeugnis; if (z != null) { counts[Math.round(clamp(z))]++; sum += z; k++; } }
   const spiegel = `<div class="spiegel no-print">${[1,2,3,4,5,6].map(n => `<div class="box ${counts[n] ? 'g' + n : ''}"><b>${counts[n]}</b><span>Note ${n}</span></div>`).join('')}<div class="box"><b>${k ? fmt(sum / k) : '–'}</b><span>Ø Zeugnis</span></div></div>`;
   return `<section class="pane ov">
-    <div class="toolbar"><h2>Übersicht und Zeugnisvorschlag</h2><div class="spacer"></div><select id="quartalFill" class="no-print" title="Leere Felder eines Quartals mit der berechneten Tendenz füllen, danach einzeln anpassen"><option value="">Quartal vorbelegen …</option>${[1, 2, 3, 4].map(q => `<option value="${q}">Q${q}: leere Felder mit berechneter Tendenz füllen</option>`).join('')}</select><button id="btnCsv" data-ro="1">Als CSV exportieren</button><button id="btnPrint" data-ro="1">Drucken</button></div>
+    ${zeitraumBar(c)}
+    <div class="toolbar"><h2>${qs ? `Übersicht · ${qs}. Quartal` : 'Übersicht und Zeugnisvorschlag'}</h2><div class="spacer"></div><select id="quartalFill" class="no-print" title="Leere Felder eines Quartals mit der berechneten Tendenz füllen, danach einzeln anpassen"><option value="">Quartal vorbelegen …</option>${[1, 2, 3, 4].map(q => `<option value="${q}">Q${q}: leere Felder mit berechneter Tendenz füllen</option>`).join('')}</select><button id="btnCsv" data-ro="1">Als CSV exportieren</button><button id="btnPrint" data-ro="1">Drucken</button></div>
     ${lowCov ? `<div class="banner"><b>${lowCov}</b> Kind${lowCov > 1 ? 'er' : ''} mit weniger als ${s.minEntries} Beobachtungen in abgeschlossenen Stunden.</div>` : ''}
+    ${qs ? `<div class="banner info">Du siehst nur das <b>${qs}. Quartal</b>${c.zeitraum.von ? ` (ab ${longDate(c.zeitraum.von)})` : ''}${c.zeitraum.bis ? `, bis vor dem ${longDate(c.zeitraum.bis)}` : ''}. Zeugnisvorschlag und Zeugnisnote stehen unter „Gesamt“.</div>` : ''}
     <p class="hint">Gesamt = ${s.hasKA ? `${100 - s.kaWeight} % Sonstige Leistungen + ${s.kaWeight} % Klassenarbeiten` : '100 % Sonstige Leistungen'}; Sonstige Leistungen = ${100 - s.testShare} % Mitarbeit + ${s.testShare} % Tests.${s.vornoteWeight > 0 ? ` Jahresnote = ${100 - s.vornoteWeight} % Gesamt + ${s.vornoteWeight} % Note 1. Halbjahr.` : ''} Nur abgeschlossene Stunden zählen. Mitarbeit zeigt Beobachtungen/Stunden. Name antippen öffnet die Kindseite. Spaltenkopf antippen sortiert die Liste, nochmal antippen dreht die Reihenfolge um. <b>Q1 bis Q4</b> sind deine Quartalsnoten: Du legst sie selbst fest, die App rechnet daran nichts. „Quartal vorbelegen“ füllt leere Felder mit der berechneten Tendenz als Ausgangspunkt.</p>
-    <h1 class="print-only">${esc(c.name)}${c.fach ? ' · ' + esc(c.fach) : ''}${c.halbjahr ? ' · ' + esc(c.halbjahr) : ''} – Stand ${longDate(today())}</h1>
+    <h1 class="print-only">${esc(c.name)}${c.fach ? ' · ' + esc(c.fach) : ''}${c.halbjahr ? ' · ' + esc(c.halbjahr) : ''}${qs ? ` · ${qs}. Quartal` : ''} – Stand ${longDate(today())}</h1>
     <div class="scroll"><table><thead><tr>
-      ${th('name', 'Schüler/in', 'sticky-col')}${th('ma', 'Mitarbeit', 'num')}${th('tr', 'Verlauf HJ', '', 'Mitarbeit: zweite Hälfte des Halbjahres gegenüber der ersten, nur bei genug Beobachtungen. Antippen sortiert: größte Verbesserung zuerst.')}${th('te', 'Tests', 'num')}${th('somi', 'Sonst. Leist.', 'num')}${s.hasKA ? th('ka', 'Klassenarb.', 'num') : ''}${th('ges', 'Gesamt', 'num')}${showVor ? th('vornote', '1. HJ') + th('jahr', 'Jahresnote', 'num') : ''}${th('tendenz', 'Tendenz', 'num')}${[1, 2, 3, 4].map(q => th('q' + q, 'Q' + q, 'qh', `Note ${q}. Quartal: trägst du selbst ein, wird nicht berechnet. Antippen sortiert.`)).join('')}${th('vorschlag', 'Vorschlag')}${th('override', 'Zeugnisnote')}<th>Bemerkung</th><th>Hinweise</th>
+      ${th('name', 'Schüler/in', 'sticky-col')}${th('ma', 'Mitarbeit', 'num')}${th('tr', 'Verlauf HJ', '', 'Mitarbeit: zweite Hälfte des Halbjahres gegenüber der ersten, nur bei genug Beobachtungen. Antippen sortiert: größte Verbesserung zuerst.')}${th('te', 'Tests', 'num')}${th('somi', 'Sonst. Leist.', 'num')}${s.hasKA ? th('ka', 'Klassenarb.', 'num') : ''}${th('ges', qs ? `Gesamt Q${qs}` : 'Gesamt', 'num')}${showVor ? th('vornote', '1. HJ') + th('jahr', 'Jahresnote', 'num') : ''}${th('tendenz', 'Tendenz', 'num')}${[1, 2, 3, 4].map(q => th('q' + q, 'Q' + q, 'qh', `Note ${q}. Quartal: trägst du selbst ein, wird nicht berechnet. Antippen sortiert.`)).join('')}${qs ? '' : th('vorschlag', 'Vorschlag') + th('override', 'Zeugnisnote')}<th>Bemerkung</th><th>Hinweise</th>
     </tr></thead><tbody>${rows || `<tr><td colspan="18" class="empty">Noch keine Schüler im Kurs.</td></tr>`}</tbody></table></div>
-    ${spiegel}
+    ${qs ? '' : spiegel}
   </section>`;
 }
-function reasonCounts(c, sid){ const rc = {}; for (const lid in (c.reasons[sid] || {})) { const r = c.reasons[sid][lid]; if (r) rc[r] = (rc[r] || 0) + 1; } return Object.entries(rc).sort((a, b) => b[1] - a[1]); }
+function reasonCounts(c, sid){ const rc = {}; const ids = new Set(c.lessons.map(l => l.id)); for (const lid in (c.reasons[sid] || {})) { if (!ids.has(lid)) continue; const r = c.reasons[sid][lid]; if (r) rc[r] = (rc[r] || 0) + 1; } return Object.entries(rc).sort((a, b) => b[1] - a[1]); }
 function detailText(c, st, g){
   const m = g.ma; const pos = m.cnt.pp + m.cnt.p, neg = m.cnt.m + m.cnt.mm;
   let t = '';
@@ -1665,7 +1718,8 @@ function renderDetail(c, st){
   const gesp = (st.gespraeche || []).slice().reverse().map(x => `<li><b>${shortDate(x.date)}${x.date.slice(0, 4)}</b> ${esc(x.text)}</li>`).join('');
   return `<section class="pane detail">
     <div class="toolbar"><button id="btnDetailBack" data-ro="1">← Übersicht</button><h2>${esc(st.name)}</h2>${ampelDot(a, true)}<div class="spacer"></div><button class="small" data-detail-nav="-1" data-ro="1" ${idx <= 0 ? 'disabled' : ''}>◀ vorige</button><button class="small" data-detail-nav="1" data-ro="1" ${idx >= c.students.length - 1 ? 'disabled' : ''}>nächste ▶</button><button class="primary" data-sprechtag="${st.id}" data-ro="1">Sprechtagsansicht</button><button id="btnPrint" data-ro="1">Drucken</button></div>
-    <h1 class="print-only">${esc(c.name)} · ${esc(st.name)} – Stand ${longDate(today())}</h1>
+    ${zeitraumBar(c, true)}
+    <h1 class="print-only">${esc(c.name)} · ${esc(st.name)}${c.zeitraum ? ` · ${c.zeitraum.q}. Quartal` : ''} – Stand ${longDate(today())}</h1>
     <p class="ampeltext ${a.farbe}">${a.farbe === 'rot' ? '🔴' : a.farbe === 'gelb' ? '🟡' : '🟢'} ${a.gruende.length ? esc(a.gruende.join(' · ')) : 'Alles in Ordnung'}</p>
     ${nmHtml(g)}
     <div class="kv">
@@ -1790,7 +1844,7 @@ function renderSprechtag(c, st){
   const naTxt = [st.na && st.na.zeit ? 'Zeitverlängerung' : '', st.na && st.na.rs ? 'Rechtschreibung nicht gewertet' : '', st.na && st.na.text].filter(Boolean).join(', ');
   return `<section class="pane sprech">
     <div class="toolbar no-print"><button id="btnSprechtagBack" data-ro="1">← Zurück</button><div class="spacer"></div><button id="btnPrint" data-ro="1">Drucken / PDF</button></div>
-    <h1>${esc(st.name)} <small>${esc(c.name)}${c.fach ? ' · ' + esc(c.fach) : ''}${c.halbjahr ? ' · ' + esc(c.halbjahr) : ''} · Stand ${shortDate(today())}${today().slice(0, 4)}</small></h1>
+    <h1>${esc(st.name)} <small>${esc(c.name)}${c.fach ? ' · ' + esc(c.fach) : ''}${c.halbjahr ? ' · ' + esc(c.halbjahr) : ''}${c.zeitraum ? ` · ${c.zeitraum.q}. Quartal` : ''} · Stand ${shortDate(today())}${today().slice(0, 4)}</small></h1>
     <div class="big"><div><b>${fmt(g.basis, 1)}</b><span>aktueller Stand</span></div><div><b><span class="trend ${ar.cls}">${ar.sym}</span></b><span>${ar.text}</span></div>${st.override != null ? `<div><b>${st.override}</b><span>Zeugnisnote</span></div>` : ''}</div>
     <h2>Woraus sich die Note zusammensetzt</h2>
     <table class="parts"><tbody>
@@ -1878,6 +1932,9 @@ function renderEinstellungen(c){
         <div class="formula">Sonstige Leistungen = ${100 - s.testShare} % Mitarbeit + ${s.testShare} % Tests<br>${s.hasKA ? `Gesamt = ${100 - s.kaWeight} % Sonstige Leistungen + ${s.kaWeight} % Klassenarbeiten` : 'Gesamt = Sonstige Leistungen'}${s.vornoteWeight > 0 ? `<br>Jahresnote = ${100 - s.vornoteWeight} % Gesamt + ${s.vornoteWeight} % Vornote` : ''}</div>
         <div class="row"><label>Warnung bei weniger Beobachtungen als${numIn('settings.minEntries', s.minEntries, 'min="0" max="50" step="1"')}</label></div>
         <p class="hint">Die Gewichtung legt in NRW die Fachkonferenz fest (APO‑SI: beide Bereiche „angemessen“). Ohne Test bzw. Klassenarbeit wird der Anteil für diese Person weggelassen.</p>
+        <h3>Quartale</h3>
+        <p class="hint">Ab dem Stichtag zählen neue Stunden, Tests und Klassenarbeiten zum nächsten Quartal. Stand, Übersicht, Kindseite und die Mitarbeitsnote lassen sich dann je Quartal oder gesamt anzeigen. Nichts wird gelöscht, und die Zeugnisnote rechnet immer mit dem gesamten Kurs. Feld leeren hebt die Grenze wieder auf.</p>
+        <div class="row"><label>Dieser Kurs beginnt mit<select data-qerstes="1"><option value="1" ${(+c.qErstes || 1) === 1 ? 'selected' : ''}>1. Quartal (1. Halbjahr)</option><option value="3" ${+c.qErstes === 3 ? 'selected' : ''}>3. Quartal (2. Halbjahr)</option></select></label>${[2, 3, 4].filter(n => n > (+c.qErstes || 1)).map(n => `<label>Beginn ${n}. Quartal<input type="date" data-quartal-ab="${n}" value="${esc((c.quartale || {})[n] || '')}"></label>`).join('')}</div>
         <h3>Ampel</h3>
         <p class="hint">Voreingestellt, muss nicht geändert werden. Gelb: im Blick behalten. Rot: dringend hinschauen (hat Vorrang).</p>
         <div class="row"><label>Gelb: Grenzbereich um x,5 (±)${numIn('settings.ampel.grenz', a.grenz, 'min="0" max="0.5" step="0.05"')}</label><label>Gelb: weniger Beobachtungen als${numIn('settings.ampel.minObs', a.minObs, 'min="0" max="50" step="1"')}</label><label>Gelb: Fehlquote über (%)${numIn('settings.ampel.fehlquote', a.fehlquote, 'min="0" max="100" step="5"')}</label></div>
@@ -1996,7 +2053,7 @@ function applyMark(el, m, opts = {}){
   if (!state.review && !altGewarnt.has(lid)) { const l = c.lessons.find(x => x.id === lid); const neu = [...c.lessons].filter(x => !x.ausfall).sort((a, b) => a.date.localeCompare(b.date)).pop(); if (l && neu && l.id !== neu.id) { altGewarnt.add(lid); toast(`Hinweis: Eintrag in die ${l.status === 'abgeschlossen' ? 'abgeschlossene ' : ''}Stunde vom ${shortDate(l.date)}, nicht in die neueste. Falsch? „↶ Rückgängig“.`, 4500); } }
   if (el.dataset.tile) el.classList.toggle('absent', m === 'F');
   const hasReason = !!((c.reasons[sid] || {})[lid]);
-  if (el.dataset.tile) { el.className = `tile m-${MARK_CLS[m]} ${hasReason ? 'hasreason' : ''}${m === 'F' ? ' absent' : ''}`; el.querySelector('.tm').textContent = MARK_LABEL[m]; el.querySelector('.tg').textContent = fmt(mitarbeit(c, sid).note, 1); }
+  if (el.dataset.tile) { el.className = `tile m-${MARK_CLS[m]} ${hasReason ? 'hasreason' : ''}${m === 'F' ? ' absent' : ''}`; el.querySelector('.tm').textContent = MARK_LABEL[m]; el.querySelector('.tg').textContent = fmt(mitarbeit(sicht(c), sid).note, 1); }
   else { el.className = `cell m-${MARK_CLS[m]} ${hasReason ? 'hasreason' : ''}` + (el.classList.contains('ausfall') ? ' ausfall' : '') + (el.classList.contains('offen') ? ' offen' : ''); el.textContent = MARK_LABEL[m]; const sum = $(`td[data-sum="${sid}"]`); if (sum) sum.innerHTML = sumCell(c, sid); }
   sync.mark(c.id);
   if (el.dataset.tile && state.review && (state.review.phase || 1) === 1) { const tg = el.querySelector('.tg'); if (tg) tg.textContent = m === 'F' ? 'fehlt' : 'da'; const ph = $('.reviewdock .phase span'); if (ph) { const n = c.students.filter(st => (c.marks[st.id] || {})[lid] === 'F').length; ph.textContent = `${n} ${n === 1 ? 'Kind fehlt' : 'Kinder fehlen'}`; } }
@@ -2011,13 +2068,14 @@ function nextReview(afterCid, afterLid){
   if (all.length) { startReview(all[0].c.id, all[0].l.id); toast(`Nächste offene Stunde: ${all[0].c.name}, ${longDate(all[0].l.date)}`, 3000); }
   else { state.review = null; state.tab = 'start'; persistLocal(); render(); toast('Alle Stunden durchgesehen. 🎉', 3000); }
 }
-function csvExport(c){
+function csvExport(real){
+  const c = sicht(real); // gewählter Zeitraum (Quartal oder gesamter Kurs)
   const s = c.settings; const sep = ';';
   const head = ['Kürzel','Mitarbeit','Beobachtungen','Stunden','Fehlstunden','Trend 4 Wochen','Tests','Sonstige Leistungen', ...(s.hasKA ? ['Klassenarbeiten'] : []), 'Gesamt','Note 1. HJ','Jahresnote','Tendenz','Q1','Q2','Q3','Q4','Vorschlag','Zeugnisnote','Ampel','Nicht mitgeschrieben','Bemerkung','Vermerk','Hinweise'];
   const lines = [head.join(sep)];
   for (const st of c.students) { const g = gesamt(c, st); const t4 = tendenz4(c, st); const a = ampel(c, st, g, t4);
     lines.push([st.name, fmt(g.ma.note), g.ma.entries, g.ma.n, g.ma.cnt.f, t4.delta == null ? '' : fmt(-t4.delta, 1), fmt(g.te.note), fmt(g.somi), ...(s.hasKA ? [fmt(g.ka.note)] : []), fmt(g.ges), st.vornote ?? '', fmt(g.jahr), tendenz(g.basis), ...[1, 2, 3, 4].map(q => (st.quartal || {})[q] || ''), g.vorschlag ?? '', g.zeugnis ?? '', a.farbe + (a.gruende.length ? ': ' + a.gruende.join(', ') : ''), g.nm.map(x => x.it.name).join(', '), st.bem || '', st.vermerk || '', [g.warn, ...g.flags].filter(Boolean).join(', ')].map(x => `"${String(x).replace(/"/g, '""')}"`).join(sep)); }
-  return downloadFile(`${c.name.replace(/[^\w\-äöüÄÖÜß ]/g, '')}-Noten-${today()}.csv`, '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8');
+  return downloadFile(`${c.name.replace(/[^\w\-äöüÄÖÜß ]/g, '')}-Noten${c.zeitraum ? '-Q' + c.zeitraum.q : ''}-${today()}.csv`, '﻿' + lines.join('\r\n'), 'text/csv;charset=utf-8');
 }
 async function downloadFile(name, content, type){
   const dl = await downloadsP;
@@ -2067,6 +2125,7 @@ function duplicateCourse(c){
   const idMap = new Map();
   d.students = c.students.map(s => { const n = newStudent(s.name); idMap.set(s.id, n.id); n.alias = s.alias; n.seat = s.seat; n.vornote = gesamt(c, s).zeugnis; n.vermerk = s.vermerk || ''; n.gespraeche = clone(s.gespraeche || []); n.notizen = clone(s.notizen || []); n.quartal = clone(s.quartal || {}); n.na = clone(s.na || { zeit: false, rs: false, text: '' }); return n; });
   d.ferien = clone(c.ferien || []);
+  d.qErstes = (+c.qErstes || 1) === 1 ? 3 : 1; d.quartale = {}; // Kopie fürs 2. Halbjahr beginnt mit dem 3. Quartal
   d.plans = (c.plans || []).map(p => { const q = newPlan(p.name); q.boardH = p.boardH; for (const [sid, pos] of Object.entries(p.pos || {})) if (idMap.has(sid)) q.pos[idMap.get(sid)] = clone(pos); return q; });
   const planMap = new Map((c.plans || []).map((p, i) => [p.id, d.plans[i].id])); d.schedule.forEach(e => { if (e.plan && planMap.has(e.plan)) e.plan = planMap.get(e.plan); });
   state.courses.push(d); state.active = d.id; state.tab = 'einstellungen'; state.curLesson = null; sync.mark(d.id); render();
@@ -2248,6 +2307,7 @@ view.addEventListener('click', async e => {
   const hb = t.closest('[data-hint]'); if (hb) { const h = hb.nextElementSibling; if (h) h.classList.toggle('open'); return; }
   const segTab = t.closest('.seg [data-tab]'); if (segTab) { state.tab = segTab.dataset.tab; state.editItem = state.detail = null; if (state.tab === 'uebersicht' && !c.checklist.spiegelSeen && !c.archived) { c.checklist.spiegelSeen = true; sync.mark(c.id); } persistLocal(); render(); return; }
   if (t.closest('#btnUndoDock') || t.closest('#btnUndoBar')) { undo(); return; }
+  const zr = t.closest('[data-zeitraum]'); if (zr) { (state.zeitraum ||= {})[c.id] = zr.dataset.zeitraum; persistLocal(); renderView(); return; }
   const cl = t.closest('[data-cur-lesson]'); if (cl) { state.curLesson = cl.dataset.curLesson; persistLocal(); renderView(); return; }
   const auth = t.closest('#btnDbxAuth'); if (auth) { if (!auth.href || auth.href.endsWith('#')) { e.preventDefault(); alertA('Bitte zuerst den App key eintragen und einen Moment warten.'); } else toast('Bei Dropbox „Zulassen“ tippen, Code kopieren und hier unten einfügen', 7000); return; }
   const gt = t.closest('[data-goto]'); if (gt) { const [cid, tab] = gt.dataset.goto.split(':'); gotoCourse(cid, tab); return; }
@@ -2330,6 +2390,13 @@ view.addEventListener('click', async e => {
     case 'btnPrint': window.print(); break;
     case 'btnDetailBack': state.detail = null; renderView(); break;
     case 'btnSprechtagBack': state.sprechtag = null; renderView(); break;
+    case 'btnQuartalNeu': { if (guardArchived(c)) return; const n = quartalNaechstes(c); if (!n) return; const l = quartalListe(c); const letzter = l[l.length - 1];
+      const d = await ask(`Ab welchem Tag sollen Stunden, Tests und Klassenarbeiten zum ${n}. Quartal zählen?\n\nAlles davor bleibt im ${letzter.q}. Quartal erhalten und ist weiter einsehbar. Es wird nichts gelöscht. Die Zeugnisnote rechnet weiter mit dem gesamten Kurs.`, { input: today(), date: true, okLabel: `${n}. Quartal beginnen` });
+      if (!d) return; if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) { await alertA('Bitte ein gültiges Datum wählen.'); return; }
+      if (letzter.von && d <= letzter.von) { await alertA(`Das ${n}. Quartal muss nach dem Beginn des ${letzter.q}. Quartals (${longDate(letzter.von)}) anfangen.`); return; }
+      undoPush(c, `${n}. Quartal beginnen`); (c.quartale ||= {})[n] = d; (state.zeitraum ||= {})[c.id] = 'q' + n; sync.mark(c.id); persistLocal(); renderView();
+      const davor = c.lessons.filter(x => x.date < d && !x.ausfall).length, danach = c.lessons.filter(x => x.date >= d && !x.ausfall).length;
+      toast(`${n}. Quartal beginnt am ${longDate(d)}: ${davor} Stunden bleiben im ${letzter.q}. Quartal, ${danach} zählen schon zum ${n}. Quartal.`, 6000); break; }
     case 'btnNotizSave': { if (guardArchived(c)) return; const st = c.students.find(s => s.id === state.detail); const txt = $('#notizText').value.trim(); if (!st || !txt) { toast('Bitte erst einen Satz eintragen.'); return; } (st.notizen ||= []).push({ date: $('#notizDate').value || today(), art: $('#notizArt').value || 'i', text: txt }); sync.mark(); renderView(); toast('Notiz gespeichert'); const ta = $('#notizText'); if (ta) ta.focus(); break; }
     case 'btnGespSave': { if (guardArchived(c)) return; const st = c.students.find(s => s.id === state.sprechtag); const txt = $('#gespText').value.trim(); if (!st || !txt) { toast('Bitte erst einen Satz eintragen.'); return; } (st.gespraeche ||= []).push({ date: $('#gespDate').value || today(), text: txt, wv: $('#gespWv').value || '', erl: false }); sync.mark(); renderView(); toast('Vereinbarung gespeichert'); break; }
     case 'btnApplyVorschlaege': { if (guardArchived(c)) return; undoPush(c, 'Vorschläge übernehmen'); let n = 0; for (const st of c.students) { const g = gesamt(c, st); if (st.override == null && !g.ermessen && g.vorschlag != null) { st.override = g.vorschlag; n++; } } sync.mark(); renderView(); toast(`${n} Zeugnisnoten übernommen, Grenzfälle bleiben offen`); break; }
@@ -2414,6 +2481,12 @@ view.addEventListener('change', async e => {
   if (t.id === 'itemShift' || t.id === 'itemMax' || t.id === 'itemDate') { renderView(); return; }
   if (t.id === 'lessonKind' || t.id === 'lessonAusfall' || t.id === 'lessonW') { const l = c.lessons.find(x => x.id === state.editLesson); if (!l) return; if (t.id === 'lessonKind') l.kind = t.value; else if (t.id === 'lessonW') { undoPush(c, 'Spaltengewicht ändern'); const w = +t.value; if (w === 1) delete l.w; else l.w = w; } else l.ausfall = t.checked; sync.mark(); renderView(); return; }
   if (t.matches('[data-sched-dauer]')) { const e2 = c.schedule.find(x => +x.wd === +t.dataset.schedDauer); if (e2) { e2.dauer = t.checked ? 2 : 1; sync.mark(); } return; }
+  // Quartalsgrenzen in den Einstellungen
+  if (t.matches('[data-quartal-ab]')) { if (guardArchived(c)) return; const n = +t.dataset.quartalAb; const v = t.value; c.quartale ||= {};
+    const frueher = Object.entries(c.quartale).filter(([q, ab]) => +q < n && ab).map(([, ab]) => ab).sort().pop(); const spaeter = Object.entries(c.quartale).filter(([q, ab]) => +q > n && ab).map(([, ab]) => ab).sort()[0];
+    if (v && ((frueher && v <= frueher) || (spaeter && v >= spaeter))) { await alertA('Die Quartale müssen zeitlich aufeinander folgen. Bitte das Datum prüfen.'); renderView(); return; }
+    undoPush(c, `Beginn ${n}. Quartal ändern`); if (v) c.quartale[n] = v; else delete c.quartale[n]; sync.mark(c.id); renderView(); toast(v ? `${n}. Quartal beginnt am ${shortDate(v)}` : `Grenze zum ${n}. Quartal aufgehoben`); return; }
+  if (t.matches('[data-qerstes]')) { if (guardArchived(c)) return; undoPush(c, 'Erstes Quartal ändern'); c.qErstes = +t.value === 3 ? 3 : 1; sync.mark(c.id); renderView(); return; }
   // Quartalsnoten: frei gesetzt, ohne Einfluss auf die Berechnung
   if (t.matches('select.qsel')) { if (guardArchived(c)) return; const [sid, q] = t.dataset.quartal.split(':'); const st = c.students.find(s => s.id === sid); if (!st) return;
     undoPush(c, `Quartalsnote Q${q} bei ${st.name}`); st.quartal ||= {}; if (t.value) st.quartal[q] = t.value; else delete st.quartal[q]; t.classList.toggle('gesetzt', !!t.value); sync.mark(); return; }
