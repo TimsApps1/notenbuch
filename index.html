@@ -156,6 +156,9 @@ html.gross .assess select.ptsel{width:92px;font-size:17px;min-height:44px}
 .trend.up{color:var(--pp)} .trend.down{color:var(--m)}
 .ov input.override{width:60px;text-align:center;font-family:var(--mono);font-weight:700;padding:4px}
 .ov input.bem{width:200px}
+/* Notenspalten: Auswahl 1+ bis 6 in sechs Zeilen */
+.notengrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:100%} .notengrid button{min-height:40px;font-family:var(--mono);font-weight:700;font-size:16px;padding:4px}
+td.cell.ncol{font-family:var(--mono);font-weight:700} th.lh.ncol .lesson-head .kind{text-decoration:underline dotted}
 /* Zeitraum-Umschalter und Quartalsgrenze in der Tabelle */
 .toolbar.zeitraum{gap:6px;align-items:center} .toolbar.zeitraum .toggle small{font-weight:400;opacity:.75;margin-left:2px} .toolbar.zeitraum #btnQuartalNeu{margin-left:8px}
 th.lh.qstart,td.cell.qstart{border-left:3px solid var(--accent)} th.lh{position:relative} .qtag{position:absolute;left:2px;top:1px;font-size:9px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:0 3px;z-index:1;pointer-events:none}
@@ -476,7 +479,7 @@ html.gross h2{font-size:20px} html.gross h3{font-size:14px}
   <h2>Bedienung in Kürze</h2>
   <p><b>Start</b> zeigt offene Stunden, Nachschreiber und die Ampel je Kurs. <b>Unterricht</b> (Mitarbeit): Stempel wählen und Kind antippen (Tabelle) oder im Sitzplan Gesten auf der Kachel: voreingestellt nach oben ++, nach unten ––, nach links +, nach rechts –, antippen ○, lange drücken F; dieselbe Geste noch einmal löscht. Belegung je Gerät unter Einstellungen → Gesten. „Sitzplan“ zeigt die Klasse als Tische, „Sitzplan bearbeiten“ lässt Kacheln verschieben. Stunden anlegen mit „+ Stunde“ oder „Stunden nachtragen“; abends über Start durchsehen und abschließen. Stunde abschließen geht überall: im Sitzplan mit „✓ Stunde abschließen“, in der Tabelle mit dem Knopf für die jüngste offene Stunde oder über den Spaltenkopf (dort auch „Wieder öffnen“), auf der Startseite über „Offene Stunden“. <b>Noten</b>: Tests, Klassenarbeiten, Stand (Ampel), Übersicht (Zeugnisvorschlag); Name antippen öffnet die Kindseite mit Entwicklung, Datenbasis, Notizen für das Elterngespräch und der Sprechtagsansicht. <b>Mehr</b>: Checkliste, Schüler (Kürzel ändern), Einstellungen (Kursname, Gewichte, Stundenplan), Speicher. Rückgängig: Pfeil oben rechts bzw. im Menü.</p>
   <h2>So rechnet das Notenbuch</h2>
-  <p><b>1. Mitarbeit (Sonstige Leistungen im Unterricht).</b> Jede Spalte ist eine Stunde oder eine andere Leistung (Protokoll, Referat, Heft …). Eine Stunde zählt erst, wenn du sie <b>abgeschlossen</b> hast (Startseite → Offene Stunden). In abgeschlossenen Stunden gilt: Wer keinen Eintrag hat, bekommt die neutrale Note (Standard 3,5). Bei anderen Leistungsarten zählt nur, wer einen Eintrag hat. Stempel: <b>++</b> = 1,0, <b>+</b> = 2,0, <b>○</b> = neutral, <b>–</b> = 5,0, <b>––</b> = 6,0 (einstellbar), <b>F</b> = fehlt, zählt nicht. Beim Abschließen einer Stunde bekommen alle ohne Eintrag automatisch den Kreis ○: Sie waren da und sind weder positiv noch negativ aufgefallen. Der Kreis zählt als Beobachtung, wiegt aber wie eine Stunde ohne Eintrag und verändert die Note nicht. Jede Leistungsart hat ein Gewicht; gestempelte Stunden können zusätzlich stärker zählen. Jede Spalte kann eigens gewichtet werden (Spaltenkopf → Gewicht): Doppelstunden zählen mit 2, eine kleine freiwillige Zusatzaufgabe mit ½, eine große mit 2. Als „freiwillig“ gekennzeichnete Arten (z. B. freiwillige Abgaben, Vertiefungsaufgaben) zählen nur, wenn sie die Mitarbeit verbessern, auf Wunsch begrenzt auf eine Höchstverbesserung. Beim zufälligen Einsammeln von Mappen werden nur die eingesammelten Kinder bewertet; wer nicht dran war, bleibt unberührt. Die Mitarbeitsnote ist der gewichtete Durchschnitt. Ausgefallene Stunden werden ignoriert.</p>
+  <p><b>1. Mitarbeit (Sonstige Leistungen im Unterricht).</b> Jede Spalte ist eine Stunde oder eine andere Leistung (Protokoll, Referat, Heft …). Eine Stunde zählt erst, wenn du sie <b>abgeschlossen</b> hast (Startseite → Offene Stunden). In abgeschlossenen Stunden gilt: Wer keinen Eintrag hat, bekommt die neutrale Note (Standard 3,5). Bei anderen Leistungsarten zählt nur, wer einen Eintrag hat. Stempel: <b>++</b> = 1,0, <b>+</b> = 2,0, <b>○</b> = neutral, <b>–</b> = 5,0, <b>––</b> = 6,0 (einstellbar), <b>F</b> = fehlt, zählt nicht. Beim Abschließen einer Stunde bekommen alle ohne Eintrag automatisch den Kreis ○: Sie waren da und sind weder positiv noch negativ aufgefallen. Der Kreis zählt als Beobachtung, wiegt aber wie eine Stunde ohne Eintrag und verändert die Note nicht. Jede Leistungsart hat ein Gewicht; gestempelte Stunden können zusätzlich stärker zählen. Jede Spalte kann statt Stempeln echte Noten aufnehmen (Spaltenkopf → Bewertung „Noten“, bei der Leistungsart „Test“ voreingestellt): Die Note zählt mit ihrem Wert (2+ = 1,7), leere Felder heißen „nicht teilgenommen“ und zählen nicht. Jede Spalte kann eigens gewichtet werden (Spaltenkopf → Gewicht): Doppelstunden zählen mit 2, eine kleine freiwillige Zusatzaufgabe mit ½, eine große mit 2. Als „freiwillig“ gekennzeichnete Arten (z. B. freiwillige Abgaben, Vertiefungsaufgaben) zählen nur, wenn sie die Mitarbeit verbessern, auf Wunsch begrenzt auf eine Höchstverbesserung. Beim zufälligen Einsammeln von Mappen werden nur die eingesammelten Kinder bewertet; wer nicht dran war, bleibt unberührt. Die Mitarbeitsnote ist der gewichtete Durchschnitt. Ausgefallene Stunden werden ignoriert.</p>
   <p><b>2. Tests (schriftliche Übungen).</b> Punkte werden in Prozent umgerechnet und über den Notenschlüssel in eine Note übersetzt. Feinschlüssel = 15‑Punkte‑Tabelle mit Tendenzen (2– = 2,3; 1+ zählt in der Sek I als 1,0), Grobschlüssel = ganze Noten. Für eine einzelne Arbeit kann der Schlüssel um einige Prozentpunkte verschoben werden (Fairness‑Check). Tests zählen mit einstellbarem Anteil (Standard 25 %) zu den Sonstigen Leistungen. Leeres Feld = noch nichts eingetragen. „n. m.“ = nicht mitgeschrieben (entschuldigt oder unentschuldigt, mit Nachschreibtermin); solche Arbeiten zählen nicht mit, das Kind steht auf der Startseite bei den Nachschreibern. Wie eine bis zum Halbjahresende nicht nachgeholte Arbeit in die Note eingeht, entscheidest du; es gibt keine automatische 6. Anhang „n“ = nachgeschrieben, „z“ = Zeitverlängerung, nur als Vermerk.</p>
   <p><b>Stand und Ampel.</b> „Stand“ zeigt die Note nach derselben Regel wie das Zeugnis, aber mit dem, was bis heute vorliegt. Der Pfeil vergleicht mit dem Stand vor 4 Wochen und erscheint erst, wenn der Kurs 4 Wochen alt ist. Der „Verlauf HJ“ in der Übersicht vergleicht die zweite Halbjahreshälfte der Mitarbeit mit der ersten und wird nur gezeigt, wenn in beiden Hälften mindestens drei Beobachtungen vorliegen. Die Ampel ist ein Hinweis: gelb bei Grenzbereich, wenigen Beobachtungen (die Erwartung wächst mit der Zahl der Stunden), hoher Fehlquote oder einer nicht mitgeschriebenen Arbeit; rot bei Note ab 4,5, großem Abstand zwischen Mitarbeit und Klassenarbeiten, deutlich schlechterer Mitarbeit seit 4 Wochen oder zwei nicht mitgeschriebenen Arbeiten. Schwellen unter Einstellungen.</p>
   <p><b>3. Klassenarbeiten</b> (nur in Fächern mit Klassenarbeiten, z. B. WP Naturwissenschaften). Gleiche Umrechnung, eigener Beurteilungsbereich. Nach APO‑SI werden beide Bereiche angemessen berücksichtigt, üblich ist 50 : 50 nach Beschluss der Fachkonferenz. Einstellbar.</p>
@@ -495,6 +498,9 @@ const DEF_GROB = [87, 73, 59, 45, 18];
 const NP_LABEL = ['1+','1','1-','2+','2','2-','3+','3','3-','4+','4','4-','5+','5','5-'];
 const MARK_CLS = {'++':'pp','+':'p','o':'o','-':'m','--':'mm','F':'f','':'none'};
 const MARK_LABEL = {'++':'++','+':'+','o':'○','-':'–','--':'––','F':'F','':''};
+// In Notenspalten steht statt eines Stempels eine Note („1+“ … „6“) im selben Feld. Farbe nach Notenwert, Anzeige mit echtem Minuszeichen.
+const istNote = m => /^[1-6][+-]?$/.test(m || '');
+for (const n of [...NP_LABEL, '6']) { const g = parseNote(n); MARK_CLS[n] = g <= 1.5 ? 'pp' : g <= 2.5 ? 'p' : g < 4.5 ? 'o' : g < 5.5 ? 'm' : 'mm'; MARK_LABEL[n] = n.replace('-', '−'); }
 const SCHEMA = 3;
 const DEF_KINDS = () => [
   { id: 'stunde', name: 'Stunde', short: '', weight: 1, neutral: true, bonus: false },
@@ -503,8 +509,11 @@ const DEF_KINDS = () => [
   { id: 'heft', name: 'Heft/Mappe', short: 'Heft', weight: 2, neutral: false, bonus: false },
   { id: 'experiment', name: 'Experiment', short: 'Exp', weight: 2, neutral: false, bonus: false },
   { id: 'hausaufgabe', name: 'Hausaufgabe', short: 'HA', weight: 1, neutral: false, bonus: false },
-  DEF_FREIWILLIG()
+  DEF_FREIWILLIG(),
+  DEF_TEST()
 ];
+// Test als Spalte in der Mitarbeit: Eingabe als Note, Gewicht je Spalte (z. B. Doppelstunde), wer fehlt bleibt leer und zählt nicht
+function DEF_TEST(){ return { id: 'test', name: 'Test', short: 'Test', weight: 1, neutral: false, bonus: false, eingabe: 'note' }; }
 // Freiwillige Zusatzleistung: zählt nur, wenn sie die Mitarbeit verbessert
 function DEF_FREIWILLIG(){ return { id: 'vertiefung', name: 'Freiwillige Abgabe', short: 'frei', weight: 1, neutral: false, bonus: true }; }
 const DEF_CRIT = () => ['fachlich richtig', 'weiterführende Frage', 'erklärt anderen', 'arbeitet konzentriert', 'Material fehlt', 'Hausaufgabe fehlt', 'Aufgabe verweigert', 'unkonzentriert'];
@@ -593,6 +602,7 @@ function migrate(c){
   if (!c.kinds.find(k => k.id === 'stunde')) c.kinds.unshift(DEF_KINDS()[0]);
   c.kinds.forEach(k => { k.bonus = !!k.bonus; });
   if (!c.kindsV2) { if (!c.kinds.some(k => k.bonus)) c.kinds.push(DEF_FREIWILLIG()); c.kindsV2 = true; } // einmalig ergänzt
+  if (!c.kindsV3) { if (!c.kinds.some(k => k.id === 'test' || k.eingabe === 'note')) c.kinds.push(DEF_TEST()); c.kindsV3 = true; } // Leistungsart „Test“ einmalig ergänzt
   if (!c.bonusV2) { if (!(+c.settings.bonusMax > 0)) c.settings.bonusMax = 0.75; c.bonusV2 = true; } // Deckel einmalig auf 0,75 setzen
   if (!Array.isArray(c.criteria)) c.criteria = DEF_CRIT();
   c.schedule ||= []; c.students ||= []; c.lessons ||= []; c.marks ||= {}; c.reasons ||= {}; c.tests ||= []; c.klassenarbeiten ||= [];
@@ -626,7 +636,7 @@ function touchMark(c, sid, lid){ (c.mu ||= {})[sid + '|' + lid] = Date.now(); }
 // Beim Abschließen: alle ohne Eintrag bekommen den Kreis („war da, nichts aufgefallen“). Nur in Unterrichtsstunden, nicht bei Ausfall.
 function neutralFuellen(c, l){
   if (!l || l.ausfall || !(c.settings.autoKreis !== false)) return 0;
-  const k = kindOf(c, l); if (!k.neutral) return 0;
+  const k = kindOf(c, l); if (!k.neutral || istNotenspalte(c, l)) return 0; // in Notenspalten heißt leer „nicht teilgenommen“
   let n = 0;
   for (const st of c.students) { const cur = (c.marks[st.id] || {})[l.id]; if (!cur) { (c.marks[st.id] ||= {})[l.id] = 'o'; touchMark(c, st.id, l.id); n++; } }
   return n;
@@ -649,7 +659,10 @@ function noteAusProzent(pct, s){
 }
 function tendenz(g){ if (g == null) return '–'; const c = clamp(g), b = Math.round(c), d = c - b; if (d <= -0.15) return b + '+'; if (d >= 0.15) return b + '-'; return String(b); }
 const kindOf = (c, l) => c.kinds.find(k => k.id === (l.kind || 'stunde')) || c.kinds[0];
-const markValue = (v, m) => m === '++' ? v.pp : m === '+' ? v.p : m === '-' ? v.m : m === '--' ? v.mm : v.n;
+const markValue = (v, m) => istNote(m) ? parseNote(m) : m === '++' ? v.pp : m === '+' ? v.p : m === '-' ? v.m : m === '--' ? v.mm : v.n;
+// Bewertungsart einer Spalte: 'note' (1+ … 6 wählen) oder 'stempel'. Die Spalte kann die Vorgabe ihrer Leistungsart überschreiben.
+function eingabeVon(c, l){ return l && (l.eingabe === 'note' || l.eingabe === 'stempel') ? l.eingabe : (l && kindOf(c, l).eingabe === 'note' ? 'note' : 'stempel'); }
+function istNotenspalte(c, l){ return eingabeVon(c, l) === 'note'; }
 const isClosed = l => l.status === 'abgeschlossen' && !l.ausfall;
 const SPALTEN_GEWICHTE = [[0.5, '½ Stunde'], [1, '1 Stunde (normal)'], [1.5, '1½ Stunden'], [2, 'Doppelstunde (2)'], [3, '3 Stunden']];
 const spaltenGewicht = l => { const w = +l.w; return w > 0 ? w : 1; };
@@ -660,7 +673,7 @@ function openLessons(c){ return c.lessons.filter(l => l.status !== 'abgeschlosse
 
 function mitarbeitRoh(c, sid, lessons){
   const s = c.settings, v = s.values, w = Math.max(0.1, +s.markedWeight || 1);
-  let sum = 0, wsum = 0, n = 0, entries = 0, last = null, total = 0; const cnt = { pp: 0, p: 0, o: 0, m: 0, mm: 0, f: 0 }; const perKind = {};
+  let sum = 0, wsum = 0, n = 0, entries = 0, last = null, total = 0; const cnt = { pp: 0, p: 0, o: 0, m: 0, mm: 0, f: 0, note: 0 }; const perKind = {};
   const row = c.marks[sid] || {};
   for (const l of lessons) {
     const kind = kindOf(c, l); const m = row[l.id] || '';
@@ -669,10 +682,12 @@ function mitarbeitRoh(c, sid, lessons){
     // Spaltengewicht l.w: Doppelstunde = 2, halbe Zusatzleistung = 0,5 (Standard 1), multipliziert das Gewicht der Leistungsart
     const kw = (kind.weight || 1) * spaltenGewicht(l);
     let val, wt;
-    if (!m) { if (!kind.neutral) continue; val = v.n; wt = kw; }
-    // Der ausdrückliche Kreis zählt als Beobachtung, wiegt aber wie eine unauffällige Stunde (nicht wie ein auffälliger Stempel)
-    else { val = markValue(v, m); wt = kw * (m === 'o' ? 1 : w); cnt[MARK_CLS[m]]++; entries++; if (!last || l.date > last) last = l.date;
-      const pk = (perKind[kind.id] ||= { name: kind.name, pp: 0, p: 0, o: 0, m: 0, mm: 0 }); pk[MARK_CLS[m]]++; }
+    // Leer zählt nur in Stempelspalten neutraler Arten (Stunden) als unauffällig. In Notenspalten heißt leer „nicht teilgenommen“ und bleibt außen vor.
+    if (!m) { if (!kind.neutral || istNotenspalte(c, l)) continue; val = v.n; wt = kw; }
+    // Der ausdrückliche Kreis zählt als Beobachtung, wiegt aber wie eine unauffällige Stunde (nicht wie ein auffälliger Stempel).
+    // Eine Note zählt mit ihrem Notenwert und wiegt wie ein Stempel in einer Spalte dieses Gewichts.
+    else { const note = istNote(m); val = markValue(v, m); wt = kw * (m === 'o' ? 1 : w); cnt[note ? 'note' : MARK_CLS[m]]++; entries++; if (!last || l.date > last) last = l.date;
+      const pk = (perKind[kind.id] ||= { name: kind.name, pp: 0, p: 0, o: 0, m: 0, mm: 0, note: 0 }); pk[note ? 'note' : MARK_CLS[m]]++; }
     n++; sum += val * wt; wsum += wt;
   }
   return { note: n ? clamp(sum / wsum) : null, n, entries, last, cnt, perKind, total, fehlquote: total ? 100 * cnt.f / total : 0 };
@@ -684,7 +699,7 @@ function mitarbeit(c, sid, opts = {}){
   const mitFrei = mitarbeitRoh(c, sid, lessons);
   if (!frei.size) return Object.assign(mitFrei, { roh: mitFrei.note, bonus: 0, freiwillig: 0 });
   const ohne = mitarbeitRoh(c, sid, lessons.filter(l => !frei.has(l.kind || 'stunde')));
-  const freiwillig = Object.entries(mitFrei.perKind).filter(([id]) => frei.has(id)).reduce((s, [, k]) => s + k.pp + k.p + k.o + k.m + k.mm, 0);
+  const freiwillig = Object.entries(mitFrei.perKind).filter(([id]) => frei.has(id)).reduce((s, [, k]) => s + k.pp + k.p + k.o + k.m + k.mm + (k.note || 0), 0);
   let note = ohne.note;
   if (note == null) note = mitFrei.note;
   else if (mitFrei.note != null && mitFrei.note < note) { const cap = +c.settings.bonusMax || 0; note = cap > 0 ? Math.max(mitFrei.note, note - cap) : mitFrei.note; }
@@ -819,7 +834,7 @@ function datenbasis(c, st){
   const tests = c.tests.filter(it => gezaehlt(getResult(it, st.id))).length;
   const ka = (c.settings.hasKA ? c.klassenarbeiten : []).filter(it => gezaehlt(getResult(it, st.id))).length;
   const tage = m.last ? Math.round((new Date(today() + 'T12:00:00') - new Date(m.last + 'T12:00:00')) / 864e5) : null;
-  const sonstige = Object.values(m.perKind).filter(k => k.name !== 'Stunde').reduce((s, k) => s + k.pp + k.p + k.o + k.m + k.mm, 0);
+  const sonstige = Object.values(m.perKind).filter(k => k.name !== 'Stunde').reduce((s, k) => s + k.pp + k.p + k.o + k.m + k.mm + (k.note || 0), 0);
   return { stempel: m.entries, stunden: m.n, total: m.total, fehl: m.cnt.f, fehlquote: m.fehlquote, tests, ka, sonstige,
     punkte: m.entries + tests + ka, positiv: m.cnt.pp + m.cnt.p, negativ: m.cnt.m + m.cnt.mm, neutral: m.cnt.o,
     letzte: m.last, tage, dichte: m.total ? m.entries / m.total : 0, cnt: m.cnt, perKind: m.perKind };
@@ -1033,14 +1048,14 @@ return { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS,
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, kursAlterTage, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow, anteile,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, touchMark, touchResult, tomb, pruneStamps, sampleCourse,
   DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs,
-  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel, quartalVorbelegen, quartalListe, quartalVon, quartalAktuell, quartalNaechstes, zeitraumKurs };
+  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel, quartalVorbelegen, quartalListe, quartalVon, quartalAktuell, quartalNaechstes, zeitraumKurs, istNote, eingabeVon, istNotenspalte, DEF_TEST };
 })();
 </script>
 
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'Version 27';
+const APP_VERSION = 'Version 28';
 const KEY = 'notenbuch-sek1-v2';
 const KEY_OLD = 'notenbuch-sek1-v1';
 const STORE_KEY = 'notenbuch-storage-v1';
@@ -1049,7 +1064,7 @@ const { NP_NOTE, DEF_FEIN, DEF_GROB, NP_LABEL, MARK_CLS, MARK_LABEL, DEF_KINDS, 
   parseNote, noteAusProzent, tendenz, kindOf, markValue, isClosed, closedLessons, openLessons, mitarbeit, trend, kursAlterTage, getResult, einzelNote, schnitt, arbeiten, gesamt, tendenz4, arrow, anteile,
   ampel, ampelCounts, stand, verlauf, nachschreiber, offeneStunden, absentOn, checkliste, focusStudents, pointsTable, itemDist, fairShift, missingScheduleDates, mergeCourses, deepMergeCourse, stampChanges, touchMark, touchResult, tomb, pruneStamps, sampleCourse,
   DEF_FERIEN, feiertage, istFrei, istSchultag, schultageZurueck, benoetigt, wiedervorlagen, kriterienKurs,
-  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel, quartalVorbelegen, quartalListe, quartalVon, quartalAktuell, quartalNaechstes, zeitraumKurs } = window.NB;
+  mitarbeitReihe, mitarbeitReiheKurs, verlaufKurs, kursMittel, datenbasis, neutralFuellen, zufallsAuswahl, DEF_FREIWILLIG, gesteRichtung, SPALTEN_GEWICHTE, spaltenGewicht, gewichtKurz, planDauer, NOTEN_WAHL, modusWechsel, quartalVorbelegen, quartalListe, quartalVon, quartalAktuell, quartalNaechstes, zeitraumKurs, istNote, eingabeVon, istNotenspalte, DEF_TEST } = window.NB;
 // Zeitraum, nach dem gerechnet und angezeigt wird (je Kurs und Gerät): 'q2' = ein Quartal, 'alle' = ganzer Kurs.
 // Voreinstellung: das laufende Quartal, sobald der Kurs Quartale hat; sonst der ganze Kurs.
 function zeitraumWahl(c){ const l = quartalListe(c); if (l.length < 2) return 'alle'; const w = (state.zeitraum || {})[c.id]; if (w === 'alle' || l.some(x => 'q' + x.q === w)) return w; return 'q' + quartalAktuell(c); }
@@ -1359,13 +1374,14 @@ function lessonEditor(c){
     <label>Datum<input type="date" id="lessonDate" value="${esc(el.date)}"></label>
     <label>Art<select id="lessonKind">${c.kinds.map(k => `<option value="${k.id}" ${(el.kind || 'stunde') === k.id ? 'selected' : ''}>${esc(k.name)}</option>`).join('')}</select></label>
     <label>Thema (optional)<input type="text" id="lessonTopic" value="${esc(el.topic || '')}" placeholder="z. B. Dichte messen"></label>
+    <label title="Stempel: ++ + ○ – ––. Noten: 1+ bis 6 wählen, leer = nicht teilgenommen.">Bewertung<select id="lessonEingabe"><option value="stempel" ${istNotenspalte(c, el) ? '' : 'selected'}>Stempel (++ + ○ – ––)</option><option value="note" ${istNotenspalte(c, el) ? 'selected' : ''}>Noten (1+ bis 6)</option></select></label>
     <label title="Wie stark diese Spalte zählt: Doppelstunde = 2, halbe Zusatzleistung = ½">Gewicht<select id="lessonW">${SPALTEN_GEWICHTE.map(([w, l]) => `<option value="${w}" ${spaltenGewicht(el) === w ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     <label class="check" style="margin:0"><input type="checkbox" id="lessonAusfall" ${el.ausfall ? 'checked' : ''}> Ausfall (zählt nicht)</label>
     <button class="${closed ? '' : 'primary'}" id="btnLessonStatus">${closed ? 'Wieder öffnen' : 'Stunde abschließen'}</button>
     ${kindOf(c, el).id !== 'stunde' && !kindOf(c, el).neutral ? `<button id="btnSammeln" title="Wählt Kinder aus, die bei dieser Leistungsart bisher am seltensten dran waren">🎲 Zufällig einsammeln (${c.settings.sammelAnzahl || 5})</button>` : ''}
     <button class="danger" id="btnDeleteLesson">Spalte löschen</button>
     <button id="btnCloseLesson">Fertig</button>
-    <span class="wide flag">${closed ? 'Abgeschlossen: Diese Stunde zählt für die Noten.' : kindOf(c, el).neutral ? 'Offen: Diese Stunde zählt noch nicht. Nach dem Durchsehen abschließen.' : 'Offen. Nur Kinder mit Eintrag werden hier gewertet, alle anderen bleiben unberührt.'}</span>
+    <span class="wide flag">${istNotenspalte(c, el) ? `Notenspalte${closed ? ', abgeschlossen' : ', noch offen'}: Zelle antippen und Note wählen. Nur Kinder mit Note werden gewertet. Leer heißt „nicht teilgenommen“ und zählt nicht, auch nicht als 6. Die Spalte wiegt so viel wie ${spaltenGewicht(el) * (kindOf(c, el).weight || 1) === 1 ? 'eine Einzelstunde' : fmt(spaltenGewicht(el) * (kindOf(c, el).weight || 1), 1).replace(',0', '') + ' Einzelstunden'} mit Stempel.` : closed ? 'Abgeschlossen: Diese Stunde zählt für die Noten.' : kindOf(c, el).neutral ?'Offen: Diese Stunde zählt noch nicht. Nach dem Durchsehen abschließen.' : 'Offen. Nur Kinder mit Eintrag werden hier gewertet, alle anderen bleiben unberührt.'}</span>
     ${sammelHtml(c, el)}
   </div>`;
 }
@@ -1407,11 +1423,12 @@ function renderMitarbeit(c){
   // erste Spalte jedes weiteren Quartals markieren
   const qStart = new Map(); for (const z of quartalListe(c)) if (z.von) { const l0 = c.lessons.filter(x => x.date >= z.von && (!z.bis || x.date < z.bis)).sort((a, b) => a.date.localeCompare(b.date))[0]; if (l0) qStart.set(l0.id, z.q); }
   const zt = zeitraumText(c);
-  const head = c.lessons.map(l => `<th class="lh ${l.ausfall ? 'ausfall' : ''} ${l.status !== 'abgeschlossen' ? 'offen' : ''} ${qStart.has(l.id) ? 'qstart' : ''}">${qStart.has(l.id) ? `<span class="qtag" title="Ab hier ${qStart.get(l.id)}. Quartal">Q${qStart.get(l.id)}</span>` : ''}<button class="lesson-head ${l.id === state.editLesson ? 'editing' : ''}" data-edit-lesson="${l.id}" title="${esc(longDate(l.date))} · ${esc(kindOf(c, l).name)}${l.topic ? ' – ' + esc(l.topic) : ''}${l.status !== 'abgeschlossen' ? ' · noch offen' : ''} (antippen zum Bearbeiten)">${lessonHead(c, l)}</button></th>`).join('');
+  const nSpalten = new Set(c.lessons.filter(l => istNotenspalte(c, l)).map(l => l.id));
+  const head = c.lessons.map(l => `<th class="lh ${l.ausfall ? 'ausfall' : ''} ${l.status !== 'abgeschlossen' ? 'offen' : ''} ${qStart.has(l.id) ? 'qstart' : ''} ${nSpalten.has(l.id) ? 'ncol' : ''}">${qStart.has(l.id) ? `<span class="qtag" title="Ab hier ${qStart.get(l.id)}. Quartal">Q${qStart.get(l.id)}</span>` : ''}<button class="lesson-head ${l.id === state.editLesson ? 'editing' : ''}" data-edit-lesson="${l.id}" title="${esc(longDate(l.date))} · ${esc(kindOf(c, l).name)}${l.topic ? ' – ' + esc(l.topic) : ''}${l.status !== 'abgeschlossen' ? ' · noch offen' : ''} (antippen zum Bearbeiten)">${lessonHead(c, l)}</button></th>`).join('');
   const focus = new Set(focusStudents(c).map(s => s.id));
   const rows = c.students.map((st, r) => {
     const row = c.marks[st.id] || {}, rs = c.reasons[st.id] || {};
-    const cells = c.lessons.map((l, ci) => { const m = row[l.id] || ''; return `<td class="cell m-${MARK_CLS[m]} ${rs[l.id] ? 'hasreason' : ''} ${l.ausfall ? 'ausfall' : ''} ${l.status !== 'abgeschlossen' ? 'offen' : ''}${qStart.has(l.id) ? ' qstart' : ''}" tabindex="0" data-sid="${st.id}" data-lid="${l.id}" data-r="${r}" data-c="${ci}" title="${esc(rs[l.id] || '')}">${MARK_LABEL[m]}</td>`; }).join('');
+    const cells = c.lessons.map((l, ci) => { const m = row[l.id] || ''; return `<td class="cell m-${MARK_CLS[m]} ${rs[l.id] ? 'hasreason' : ''} ${l.ausfall ? 'ausfall' : ''} ${l.status !== 'abgeschlossen' ? 'offen' : ''}${qStart.has(l.id) ? ' qstart' : ''}${nSpalten.has(l.id) ? ' ncol' : ''}" tabindex="0" data-sid="${st.id}" data-lid="${l.id}" data-r="${r}" data-c="${ci}" title="${esc(rs[l.id] || (nSpalten.has(l.id) ? (m ? 'Note ändern' : 'Note wählen (leer = nicht teilgenommen)') : ''))}">${MARK_LABEL[m]}</td>`; }).join('');
     const sm = state.sammel && state.sammel.cid === c.id && state.sammel.lid === state.editLesson && state.sammel.ids.includes(st.id);
     return `<tr id="row-${st.id}" class="${focus.has(st.id) ? 'focus' : ''} ${sm ? 'sammel' : ''}"><th class="sticky-col" title="${esc(st.name)}">${sm ? '🎲 ' : ''}${esc(st.name)}</th>${cells}<td class="sum" data-sum="${st.id}">${sumCell(c, st.id)}</td></tr>`;
   }).join('');
@@ -1422,7 +1439,7 @@ function renderMitarbeit(c){
     <div class="toolbar">${stampBar()}${undoBar()}<div class="spacer"></div>${viewToggle()}${micButton()}${addBar(c)}</div>
     ${zeitraumBar(c, true)}
     <div class="toolbar">${focusBar(c)}<div class="spacer"></div>${lo ? `<button class="small primary" data-lesson-status="${lo.id}" title="Alle ohne Eintrag bekommen den Kreis ○">✓ Stunde vom ${weekday(lo.date)} ${shortDate(lo.date)} abschließen</button>` : ''}${open ? `<button class="small" data-review-course="${c.id}">${open} offene Stunde${open > 1 ? 'n' : ''} durchsehen</button>` : '<span class="flag">Alle Stunden abgeschlossen</span>'}<span class="flag">${c.lessons.length} Spalten · ${c.students.length} Schüler</span></div>
-    <p class="hint">Stempel wählen, dann Zellen antippen (nochmal antippen löscht). Graue Spalten sind noch offen und zählen nicht, bis du sie abschließt: mit dem Knopf oben für die jüngste offene Stunde, oder Spaltenkopf antippen → „Stunde abschließen“ bzw. „Wieder öffnen“. Abgeschlossene Stunden ohne Eintrag zählen als <b>${fmt(c.settings.values.n, 1)}</b>. <span class="desk">Tastatur: <kbd>+</kbd> <kbd>-</kbd> (doppelt für ++ / ––), <kbd>o</kbd>, <kbd>F</kbd>, <kbd>Entf</kbd>, Pfeiltasten.</span></p>
+    <p class="hint">Stempel wählen, dann Zellen antippen (nochmal antippen löscht). In <b>Notenspalten</b> (z. B. „Test“, im Spaltenkopf unter „Bewertung“ umstellbar) öffnet ein Tipp die Notenauswahl 1+ bis 6; leer heißt „nicht teilgenommen“ und zählt nicht. Graue Spalten sind noch offen und zählen nicht, bis du sie abschließt: mit dem Knopf oben für die jüngste offene Stunde, oder Spaltenkopf antippen → „Stunde abschließen“ bzw. „Wieder öffnen“. Abgeschlossene Stunden ohne Eintrag zählen als <b>${fmt(c.settings.values.n, 1)}</b>. <span class="desk">Tastatur: <kbd>+</kbd> <kbd>-</kbd> (doppelt für ++ / ––), <kbd>o</kbd>, <kbd>F</kbd>, <kbd>Entf</kbd>, Pfeiltasten.</span></p>
     ${lessonEditor(c)}
     <div class="scroll">${table}</div>
   </section>`;
@@ -1470,7 +1487,7 @@ function renderKacheln(c){
   const sel = `<select id="curLesson">${[...c.lessons].sort((a, b) => b.date.localeCompare(a.date)).map(x => `<option value="${x.id}" ${l && x.id === l.id ? 'selected' : ''}>${weekday(x.date)} ${shortDate(x.date)} ${kindOf(c, x).id !== 'stunde' ? '· ' + esc(kindOf(c, x).name) : ''}${gewichtKurz(x, kindOf(c, x)) ? ' · ' + gewichtKurz(x, kindOf(c, x)) : ''}${x.topic ? ' · ' + esc(x.topic) : ''}${x.ausfall ? ' (Ausfall)' : x.status !== 'abgeschlossen' ? ' (offen)' : ''}</option>`).join('')}</select>`;
   const editTools = state.seatEdit ? `<button class="small toggle ${state.snap ? 'on' : ''}" id="btnSnap" title="Kacheln beim Loslassen am Raster ausrichten">Raster</button><button class="small" id="btnAutoSeat" title="Alle Kacheln in Reihen anordnen">Automatisch anordnen</button><span class="flag">Raum breiter/schmaler</span><button class="small" data-boardw="-20" title="Raum schmaler">−</button><button class="small" data-boardw="20" title="Raum breiter, z. B. für 4 + Gang + 4">+</button><span class="flag">Höhe</span><button class="small" data-boardh="-10">−</button><button class="small" data-boardh="10">+</button><span class="flag" title="Kleinere Tische = mehr Plätze nebeneinander">Tische</span><button class="small" data-tilew="-2" title="Tische kleiner, mehr nebeneinander">−</button><button class="small" data-tilew="2" title="Tische größer">+</button>` : '';
   return `<section class="pane">
-    <div class="toolbar">${state.seatEdit ? stampBar() : gestenBar()}${undoBar()}<div class="spacer"></div>${viewToggle()}${micButton()}${addBar(c)}</div>
+    <div class="toolbar">${state.seatEdit ? stampBar() : l && istNotenspalte(c, l) ? '<div class="stamps legende"><span class="tb-label">Notenspalte</span><span class="geste">Kachel antippen und Note wählen. Leer = nicht teilgenommen.</span></div>' : gestenBar()}${undoBar()}<div class="spacer"></div>${viewToggle()}${micButton()}${addBar(c)}</div>
     ${altWarn(c, l)}
     ${zeitraumBar(c, true)}
     <div class="toolbar"><label>Spalte ${sel}</label>${planBar(c, l, state.seatEdit)}${l && !l.ausfall ? (l.status !== 'abgeschlossen' ? `<button class="small primary" data-lesson-status="${l.id}" title="Alle ohne Eintrag bekommen den Kreis ○">✓ Stunde abschließen</button><button class="small" data-review-lesson="${c.id}:${l.id}" title="Schritt für Schritt: Fehlende, dann Stempel">Durchsehen</button>` : `<button class="small" data-lesson-status="${l.id}">Stunde wieder öffnen</button>`) : ''}${focusBar(c)}<div class="spacer"></div>${zoomBar()}<button class="small toggle ${state.seatEdit ? 'on' : ''}" id="btnSeatEdit">${state.seatEdit ? 'Sitzplan fertig' : 'Sitzplan bearbeiten'}</button>${editTools}</div>
@@ -1499,7 +1516,7 @@ function renderReview(c){
 }
 function sumCell(c, sid){
   const m = mitarbeit(sicht(c), sid); // gewählter Zeitraum
-  const parts = []; if (m.cnt.pp) parts.push(m.cnt.pp + '× ++'); if (m.cnt.p) parts.push(m.cnt.p + '× +'); if (m.cnt.o) parts.push(m.cnt.o + '× ○'); if (m.cnt.m) parts.push(m.cnt.m + '× –'); if (m.cnt.mm) parts.push(m.cnt.mm + '× ––'); if (m.cnt.f) parts.push(m.cnt.f + '× F');
+  const parts = []; if (m.cnt.pp) parts.push(m.cnt.pp + '× ++'); if (m.cnt.p) parts.push(m.cnt.p + '× +'); if (m.cnt.o) parts.push(m.cnt.o + '× ○'); if (m.cnt.m) parts.push(m.cnt.m + '× –'); if (m.cnt.mm) parts.push(m.cnt.mm + '× ––'); if (m.cnt.note) parts.push(m.cnt.note + (m.cnt.note === 1 ? ' Note' : ' Noten')); if (m.cnt.f) parts.push(m.cnt.f + '× F');
   return `<span class="n ${gClass(m.note)}" style="background:none">${fmt(m.note, 1)}</span>${m.note == null ? '' : ` <span class="flag">(${tendenz(m.note)})</span>`}<span class="c">${parts.join(' · ') || 'keine Einträge'}</span>`;
 }
 function gClass(g){ return g == null ? 'gnull' : 'g' + Math.min(6, Math.max(1, Math.round(clamp(g)))); }
@@ -1686,7 +1703,7 @@ function detailText(c, st, g){
   if (m.n) {
     const lvl = m.note <= 2 ? 'beteiligt sich regelmäßig und auf hohem Niveau' : m.note <= 3 ? 'beteiligt sich regelmäßig und meist mit guten Beiträgen' : m.note <= 3.7 ? 'beteiligt sich in angemessenem Umfang' : m.note <= 4.5 ? 'beteiligt sich nur gelegentlich und muss häufig aufgefordert werden' : 'beteiligt sich kaum am Unterricht';
     t += `${st.name} ${lvl} (${pos} positive, ${neg} negative Einträge bei ${m.n} bewerteten Stunden, Mitarbeit ${fmt(m.note)}).`;
-    const kinds = Object.values(m.perKind).filter(k => k.name !== 'Stunde'); if (kinds.length) t += ' Weitere Leistungen: ' + kinds.map(k => `${k.name} ${['pp','p','o','m','mm'].filter(x => k[x]).map(x => k[x] + '× ' + MARK_LABEL[{pp:'++',p:'+',o:'o',m:'-',mm:'--'}[x]]).join(', ')}`).join('; ') + '.';
+    const kinds = Object.values(m.perKind).filter(k => k.name !== 'Stunde'); if (kinds.length) t += ' Weitere Leistungen: ' + kinds.map(k => `${k.name} ${[...['pp','p','o','m','mm'].filter(x => k[x]).map(x => k[x] + '× ' + MARK_LABEL[{pp:'++',p:'+',o:'o',m:'-',mm:'--'}[x]]), ...(k.note ? [k.note + (k.note === 1 ? ' Note' : ' Noten')] : [])].join(', ')}`).join('; ') + '.';
     if (g.tr) t += g.tr.delta <= -0.2 ? ' Im Verlauf des Halbjahres hat sich die Mitarbeit deutlich verbessert.' : g.tr.delta >= 0.2 ? ' Im Verlauf des Halbjahres hat die Mitarbeit nachgelassen.' : ' Die Mitarbeit ist über das Halbjahr stabil.';
     if (m.freiwillig) t += m.bonus > 0 ? ` ${st.name} hat ${m.freiwillig} freiwillige Zusatzleistung${m.freiwillig === 1 ? '' : 'en'} abgegeben und die Mitarbeitsnote damit von ${fmt(m.roh, 1)} auf ${fmt(m.note, 1)} verbessert.` : ` ${st.name} hat ${m.freiwillig} freiwillige Zusatzleistung${m.freiwillig === 1 ? '' : 'en'} abgegeben.`;
     if (m.cnt.f) t += ` Gefehlt in ${m.cnt.f} von ${m.total} Stunden.`;
@@ -1811,7 +1828,8 @@ function renderEntwicklung(c, st, g){
     { label: '○ neutral', value: d.cnt.o, color: 'var(--o)' }, { label: '– schwach', value: d.cnt.m, color: 'var(--m)' },
     { label: '–– sehr schwach', value: d.cnt.mm, color: 'var(--mm)' }, { label: 'F gefehlt', value: d.cnt.f, color: 'var(--f)' }
   ];
-  const kinds = Object.values(d.perKind).filter(k => k.name !== 'Stunde').map(k => ({ label: k.name, value: k.pp + k.p + k.o + k.m + k.mm }));
+  const kinds = Object.values(d.perKind).filter(k => k.name !== 'Stunde').map(k => ({ label: k.name, value: k.pp + k.p + k.o + k.m + k.mm + (k.note || 0) }));
+  if (d.cnt.note) stempelItems.splice(5, 0, { label: 'Noten (Notenspalten)', value: d.cnt.note, color: 'var(--accent)' });
   const gruende = reasonCounts(c, st.id).slice(0, 6).map(([r, n]) => ({ label: r, value: n, color: /fehlt|verweigert|unkonzentriert/i.test(r) ? 'var(--m)' : 'var(--p)' }));
   return `<h3>Entwicklung und Datenbasis</h3>
     <div class="kv">${kv.map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('')}</div>
@@ -1954,7 +1972,7 @@ function renderEinstellungen(c){
         <p class="hint">Beispiel: 20 Stunden, 5× „+“ und 1× „++“ ergibt mit Gewicht 1 die Note 3,0, mit Gewicht 2 die Note 2,6.</p>
         <h3>Leistungsarten</h3>
         <p class="hint">Gewicht 2 = zählt wie zwei Stempel; das ist der Standard für alle Spalten dieser Art. Für eine einzelne Abgabe stellst du im Spaltenkopf ½, 1 oder 2 Stunden ein (z. B. kleine Vertiefungsaufgabe = ½, große = 2). „Ohne Eintrag = neutral“ gilt nur für Stunden; bei Mappen, Abgaben usw. bleibt ein leeres Feld unbewertet, wer nicht dran war, hat also keinen Nachteil. „Freiwillig“ heißt: zählt nur, wenn es die Mitarbeit verbessert, eine schwache freiwillige Abgabe schadet nie.</p>
-        <ul class="kinds">${c.kinds.map((k, i) => `<li><input type="text" data-kind="${i}.name" value="${esc(k.name)}" ${k.id === 'stunde' ? 'disabled' : ''}><label>Kürzel <input type="text" data-kind="${i}.short" value="${esc(k.short)}" style="width:60px" ${k.id === 'stunde' ? 'disabled' : ''}></label><label>Gewicht <input type="number" data-kind="${i}.weight" value="${k.weight}" min="0.5" max="10" step="0.5"></label><label class="check" style="margin:0"><input type="checkbox" data-kind="${i}.neutral" ${k.neutral ? 'checked' : ''} ${k.id === 'stunde' ? 'disabled' : ''}> ohne Eintrag = neutral</label><label class="check" style="margin:0" title="Zählt nur, wenn es die Mitarbeit verbessert"><input type="checkbox" data-kind="${i}.bonus" ${k.bonus ? 'checked' : ''} ${k.id === 'stunde' ? 'disabled' : ''}> freiwillig</label>${k.id === 'stunde' ? '' : `<button class="small danger" data-del-kind="${i}">✕</button>`}</li>`).join('')}</ul>
+        <ul class="kinds">${c.kinds.map((k, i) => `<li><input type="text" data-kind="${i}.name" value="${esc(k.name)}" ${k.id === 'stunde' ? 'disabled' : ''}><label>Kürzel <input type="text" data-kind="${i}.short" value="${esc(k.short)}" style="width:60px" ${k.id === 'stunde' ? 'disabled' : ''}></label><label>Gewicht <input type="number" data-kind="${i}.weight" value="${k.weight}" min="0.5" max="10" step="0.5"></label><label class="check" style="margin:0"><input type="checkbox" data-kind="${i}.neutral" ${k.neutral ? 'checked' : ''} ${k.id === 'stunde' ? 'disabled' : ''}> ohne Eintrag = neutral</label><label class="check" style="margin:0" title="Zählt nur, wenn es die Mitarbeit verbessert"><input type="checkbox" data-kind="${i}.bonus" ${k.bonus ? 'checked' : ''} ${k.id === 'stunde' ? 'disabled' : ''}> freiwillig</label><label title="Vorgabe für neue Spalten dieser Art, je Spalte umstellbar">Bewertung <select data-kind="${i}.eingabe" ${k.id === 'stunde' ? 'disabled' : ''}><option value="stempel" ${k.eingabe === 'note' ? '' : 'selected'}>Stempel</option><option value="note" ${k.eingabe === 'note' ? 'selected' : ''}>Noten</option></select></label>${k.id === 'stunde' ? '' : `<button class="small danger" data-del-kind="${i}">✕</button>`}</li>`).join('')}</ul>
         <div class="row" style="margin-top:8px"><button class="small" id="btnAddKind">+ Leistungsart</button></div>
         <div class="row"><label>Freiwilliges verbessert die Mitarbeit höchstens um … Noten (Empfehlung 0,75; 0 = unbegrenzt)${numIn('settings.bonusMax', s.bonusMax || 0, 'min="0" max="3" step="0.05"')}</label><label>Zufällig einsammeln: Anzahl${numIn('settings.sammelAnzahl', s.sammelAnzahl || 5, 'min="1" max="40" step="1"')}</label></div>
         <h3>Gesten im Sitzplan (nur dieses Gerät)</h3>
@@ -2009,6 +2027,16 @@ function renderSpeicher(){
   </section>`;
 }
 function hidePopover(){ const p = $('#popover'); p.hidden = true; p.innerHTML = ''; }
+// Notenauswahl für Notenspalten: 1+ bis 6 in sechs Zeilen, dazu „keine Note“
+function showNotePopover(el, sid, lid){
+  const c = (state.review && byId(state.review.cid)) || course(); const p = $('#popover'); const cur = (c.marks[sid] || {})[lid] || '';
+  const name = c.students.find(s => s.id === sid)?.name || '';
+  p.innerHTML = `<span class="flag" style="width:100%">Note für ${esc(name)}:</span><div class="notengrid">${NOTEN_WAHL().map(n => `<button class="${n === cur ? 'primary' : ''}" data-note="${n}" data-sid="${sid}" data-lid="${lid}">${MARK_LABEL[n]}</button>`).join('')}</div><button data-note="" data-sid="${sid}" data-lid="${lid}" style="width:100%">keine Note (nicht teilgenommen)</button>`;
+  p.hidden = false;
+  const r = el.getBoundingClientRect(); const pw = Math.min(320, window.innerWidth - 16); const ph = p.offsetHeight || 330;
+  p.style.left = Math.max(8, Math.min(window.innerWidth - pw - 8, r.left)) + 'px';
+  p.style.top = Math.max(8, Math.min(window.innerHeight - ph - 8, r.bottom + 4)) + 'px';
+}
 function showReasonPopover(el, sid, lid){
   const c = course(); const p = $('#popover'); const cur = (c.reasons[sid] || {})[lid] || '';
   p.innerHTML = `<span class="flag" style="width:100%">Grund für ${esc(c.students.find(s => s.id === sid)?.name || '')}:</span>` + c.criteria.map(r => `<button class="${r === cur ? 'primary' : ''}" data-reason="${esc(r)}" data-sid="${sid}" data-lid="${lid}">${esc(r)}</button>`).join('') + `<button data-reason="" data-sid="${sid}" data-lid="${lid}">ohne Grund</button>`;
@@ -2038,6 +2066,7 @@ function setMark(c, sid, lid, m){
 function stundeAbschliessen(c, l){
   if (!l) return 0; undoPush(c, 'Stunde abschließen');
   l.status = 'abgeschlossen'; const n = neutralFuellen(c, l); sync.mark(c.id);
+  if (istNotenspalte(c, l)) { const mit = c.students.filter(st => (c.marks[st.id] || {})[l.id]).length, ohne = c.students.length - mit; toast(`Abgeschlossen: ${mit} ${mit === 1 ? 'Note zählt' : 'Noten zählen'}${ohne ? `, ${ohne} ohne Eintrag ${ohne === 1 ? 'hat' : 'haben'} nicht teilgenommen und ${ohne === 1 ? 'bleibt' : 'bleiben'} unberührt` : ''}.`, 4500); return n; }
   if (n) toast(`Stunde abgeschlossen · ${n} ${n === 1 ? 'Kind war' : 'Kinder waren'} unauffällig (○)`, 3500); else toast('Stunde abgeschlossen');
   return n;
 }
@@ -2054,7 +2083,7 @@ function applyMark(el, m, opts = {}){
   if (el.dataset.tile) el.classList.toggle('absent', m === 'F');
   const hasReason = !!((c.reasons[sid] || {})[lid]);
   if (el.dataset.tile) { el.className = `tile m-${MARK_CLS[m]} ${hasReason ? 'hasreason' : ''}${m === 'F' ? ' absent' : ''}`; el.querySelector('.tm').textContent = MARK_LABEL[m]; el.querySelector('.tg').textContent = fmt(mitarbeit(sicht(c), sid).note, 1); }
-  else { el.className = `cell m-${MARK_CLS[m]} ${hasReason ? 'hasreason' : ''}` + (el.classList.contains('ausfall') ? ' ausfall' : '') + (el.classList.contains('offen') ? ' offen' : ''); el.textContent = MARK_LABEL[m]; const sum = $(`td[data-sum="${sid}"]`); if (sum) sum.innerHTML = sumCell(c, sid); }
+  else { el.className = `cell m-${MARK_CLS[m]} ${hasReason ? 'hasreason' : ''}` + ['ausfall', 'offen', 'qstart', 'ncol'].filter(k => el.classList.contains(k)).map(k => ' ' + k).join(''); el.textContent = MARK_LABEL[m]; const sum = $(`td[data-sum="${sid}"]`); if (sum) sum.innerHTML = sumCell(c, sid); }
   sync.mark(c.id);
   if (el.dataset.tile && state.review && (state.review.phase || 1) === 1) { const tg = el.querySelector('.tg'); if (tg) tg.textContent = m === 'F' ? 'fehlt' : 'da'; const ph = $('.reviewdock .phase span'); if (ph) { const n = c.students.filter(st => (c.marks[st.id] || {})[lid] === 'F').length; ph.textContent = `${n} ${n === 1 ? 'Kind fehlt' : 'Kinder fehlen'}`; } }
   if (m && m !== 'F' && state.reasonMode && !opts.noReason) showReasonPopover(el, sid, lid); else hidePopover();
@@ -2204,6 +2233,8 @@ $('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-ta
   if (state.tab === 'uebersicht' && c && !c.checklist.spiegelSeen && !c.archived) { c.checklist.spiegelSeen = true; sync.mark(c.id); }
   persistLocal(); render(); });
 $('#popover').addEventListener('click', e => { const c = course(); const t = e.target; e.stopPropagation();
+  // Note aus der Notenauswahl übernehmen (Tabelle oder Sitzplan)
+  const nb = t.closest('[data-note]'); if (nb) { const { sid, lid, note } = nb.dataset; const el = $(`td.cell[data-sid="${sid}"][data-lid="${lid}"]`) || $(`.tile[data-tile="${sid}"]`); hidePopover(); if (el) applyMark(el, note, { noReason: true }); return; }
   const b = t.closest('[data-reason]'); if (b) { const { sid, lid, reason } = b.dataset;
     if (reason) (c.reasons[sid] ||= {})[lid] = reason; else if (c.reasons[sid]) delete c.reasons[sid][lid]; touchMark(c, sid, lid);
     const el = $(`td.cell[data-sid="${sid}"][data-lid="${lid}"]`) || $(`.tile[data-tile="${sid}"]`); if (el) { el.classList.toggle('hasreason', !!reason); el.title = reason || ''; }
@@ -2226,6 +2257,8 @@ const SWIPE_MIN = 24, LANG_MS = 550;
 function gesteAnwenden(tile, art){
   const m = (state.gesten || {})[art]; if (m == null || m === 'aus') return false;
   const cc = boardCourse(); const l = curLesson(cc); if (!l) return false;
+  // Notenspalte: jede Geste öffnet die Notenauswahl
+  if (istNotenspalte(cc, l)) { if (!guardArchived(cc)) showNotePopover(tile, tile.dataset.tile, l.id); return true; }
   const cur = (cc.marks[tile.dataset.tile] || {})[l.id] || '';
   const ziel = m === 'stamp' ? state.stamp : m;
   applyMark(tile, cur === ziel ? '' : ziel, { noReason: !state.reasonMode || ziel === 'F' || ziel === 'o' || ziel === '' });
@@ -2290,6 +2323,7 @@ view.addEventListener('contextmenu', e => { if (e.target.closest('.board .tile')
 function kachelTipp(tile, phase1){
   const cc = boardCourse(); const l = curLesson(cc); if (!l) return; const cur = (cc.marks[tile.dataset.tile] || {})[l.id] || '';
   if (phase1) { applyMark(tile, cur === 'F' ? '' : 'F', { noReason: true }); return; }
+  if (istNotenspalte(cc, l)) { if (!guardArchived(cc)) showNotePopover(tile, tile.dataset.tile, l.id); return; }
   if (!gesteAnwenden(tile, 'tipp')) applyMark(tile, cur === state.stamp ? '' : state.stamp);
 }
 view.addEventListener('wheel', e => { const wrap = e.target.closest('#boardwrap'); if (!wrap || !e.ctrlKey) return; e.preventDefault(); state.boardZoom = Math.min(4, Math.max(0.4, +(boardZoom() * (e.deltaY < 0 ? 1.15 : 1 / 1.15)).toFixed(2))); persistLocal(); const sl = wrap.scrollLeft / wrap.scrollWidth, st = wrap.scrollTop / wrap.scrollHeight; renderView(); const w2 = $('#boardwrap'); if (w2) { w2.scrollLeft = sl * w2.scrollWidth; w2.scrollTop = st * w2.scrollHeight; } }, { passive: false });
@@ -2323,7 +2357,9 @@ view.addEventListener('click', async e => {
   const dn2 = t.closest('[data-del-notiz]'); if (dn2) { const st = c.students.find(s => s.id === state.detail); const n = st && (st.notizen || [])[+dn2.dataset.delNotiz]; if (!n) return; undoPush(c, 'Notiz löschen'); n.del = true; sync.mark(c.id); renderView(); toast('Notiz gelöscht'); return; }
   const rc = t.closest('[data-review-course]'); if (rc) { const cc = byId(rc.dataset.reviewCourse); const o = cc ? openLessons(cc) : []; if (o.length) startReview(cc.id, o[0].id); else toast('Keine offenen Stunden in diesem Kurs.'); return; }
   const stamp = t.closest('[data-stamp]'); if (stamp) { state.stamp = stamp.dataset.stamp; $$('.stamp').forEach(b => b.classList.toggle('active', b === stamp)); persistLocal(); return; }
-  const cell = t.closest('td.cell'); if (cell) { const cur = (c.marks[cell.dataset.sid] || {})[cell.dataset.lid] || ''; applyMark(cell, cur === state.stamp ? '' : state.stamp); return; }
+  const cell = t.closest('td.cell'); if (cell) { const cur = (c.marks[cell.dataset.sid] || {})[cell.dataset.lid] || '';
+    const ls2 = c.lessons.find(x => x.id === cell.dataset.lid); if (ls2 && istNotenspalte(c, ls2)) { if (guardArchived(c)) return; showNotePopover(cell, cell.dataset.sid, cell.dataset.lid); return; }
+    applyMark(cell, cur === state.stamp ? '' : state.stamp); return; }
   const tile = t.closest('.tile'); if (tile) {
     if (state.seatEdit) return;
     if (Date.now() < swipeBis) { swipeBis = 0; return; }
@@ -2425,6 +2461,16 @@ view.addEventListener('click', async e => {
 view.addEventListener('keydown', e => {
   const cell = e.target.closest('td.cell'); if (!cell) return;
   const c = course(); const cur = (c.marks[cell.dataset.sid] || {})[cell.dataset.lid] || ''; const k = e.key;
+  // Notenspalte: Ziffer 1–6 setzt die Note, + und − ändern die Tendenz, Eingabe öffnet die Auswahl
+  const lk = c.lessons.find(x => x.id === cell.dataset.lid);
+  if (lk && istNotenspalte(c, lk) && !['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(k)) {
+    if (/^[1-6]$/.test(k)) applyMark(cell, k, { noReason: true });
+    else if ((k === '+' || k === '-') && istNote(cur)) { const neu = cur[0] + k; applyMark(cell, neu === '6+' || neu === '6-' ? '6' : cur.slice(1) === k ? cur[0] : neu, { noReason: true }); }
+    else if (k === 'Delete' || k === 'Backspace' || k === '0') applyMark(cell, '');
+    else if (k === 'Enter' || k === ' ') showNotePopover(cell, cell.dataset.sid, cell.dataset.lid);
+    else return;
+    e.preventDefault(); return;
+  }
   if (k === '+') applyMark(cell, cur === '+' ? '++' : '+', { noReason: true });
   else if (k === '-') applyMark(cell, cur === '-' ? '--' : '-', { noReason: true });
   else if (k === 'f' || k === 'F') applyMark(cell, 'F');
@@ -2479,7 +2525,9 @@ view.addEventListener('change', async e => {
     const av = $(`td[data-avg="${it.id}"]`); if (av) av.innerHTML = assessAvg(c, it);
     sync.mark(); return; }
   if (t.id === 'itemShift' || t.id === 'itemMax' || t.id === 'itemDate') { renderView(); return; }
-  if (t.id === 'lessonKind' || t.id === 'lessonAusfall' || t.id === 'lessonW') { const l = c.lessons.find(x => x.id === state.editLesson); if (!l) return; if (t.id === 'lessonKind') l.kind = t.value; else if (t.id === 'lessonW') { undoPush(c, 'Spaltengewicht ändern'); const w = +t.value; if (w === 1) delete l.w; else l.w = w; } else l.ausfall = t.checked; sync.mark(); renderView(); return; }
+  if (t.id === 'lessonEingabe') { const l = c.lessons.find(x => x.id === state.editLesson); if (!l) return; undoPush(c, 'Bewertungsart ändern'); l.eingabe = t.value === 'note' ? 'note' : 'stempel'; sync.mark(); renderView();
+    toast(l.eingabe === 'note' ? 'Notenspalte: Zelle antippen und Note wählen. Leer = nicht teilgenommen, zählt nicht.' : 'Stempelspalte: ++ + ○ – –– wie gewohnt.', 4500); return; }
+  if (t.id === 'lessonKind' || t.id === 'lessonAusfall' || t.id === 'lessonW') { const l = c.lessons.find(x => x.id === state.editLesson); if (!l) return; if (t.id === 'lessonKind') { l.kind = t.value; delete l.eingabe; } else if (t.id === 'lessonW') { undoPush(c, 'Spaltengewicht ändern'); const w = +t.value; if (w === 1) delete l.w; else l.w = w; } else l.ausfall = t.checked; sync.mark(); renderView(); return; }
   if (t.matches('[data-sched-dauer]')) { const e2 = c.schedule.find(x => +x.wd === +t.dataset.schedDauer); if (e2) { e2.dauer = t.checked ? 2 : 1; sync.mark(); } return; }
   // Quartalsgrenzen in den Einstellungen
   if (t.matches('[data-quartal-ab]')) { if (guardArchived(c)) return; const n = +t.dataset.quartalAb; const v = t.value; c.quartale ||= {};
